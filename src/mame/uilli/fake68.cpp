@@ -23,6 +23,7 @@ print d@(d@(d@0 + 0x20) + $03C)
 #include "cpu/m68000/m68020.h"
 #include "cpu/m68000/m68030.h"
 #include "machine/mc68681.h"
+#include "machine/nvram.h"
 #include "machine/terminal.h"
 #include "bus/rs232/rs232.h"
 #include "bus/ata/ataintf.h"
@@ -32,6 +33,11 @@ print d@(d@(d@0 + 0x20) + $03C)
 #include <stdio.h>
 #include <signal.h>
 
+#define RAMDISK_BASE 0xa0000000
+#define RAMDISK_SIZE 0x01900000
+
+#define RAMDISK_END  (RAMDISK_BASE + RAMDISK_SIZE - 1)
+
 namespace {
 
 class fake68_state : public driver_device
@@ -40,6 +46,7 @@ public:
     fake68_state(const machine_config &mconfig, device_type type, const char *tag)
         : driver_device(mconfig, type, tag)
         , m_maincpu(*this, "maincpu")
+        , m_ramdisk(*this, "nvram")
         , m_duart(*this, "duart")
         , m_rs232_a(*this, "rs232_a")
         , m_rs232_b(*this, "rs232_b")
@@ -56,6 +63,7 @@ protected:
 
 private:
     required_device<cpu_device> m_maincpu;
+    required_device<nvram_device> m_ramdisk;
     required_device<mc68681_device> m_duart;
     required_device<rs232_port_device> m_rs232_a;
     required_device<rs232_port_device> m_rs232_b;
@@ -91,6 +99,11 @@ private:
 
     uint8_t cf_r(offs_t offset);
     void cf_w(offs_t offset, uint8_t data);
+
+    std::unique_ptr<uint8_t[]> m_ramdisk_data;
+
+    uint8_t ramdisk_r(offs_t offset);
+    void ramdisk_w(offs_t offset, uint8_t data);
 };
 
 void fake68_state::machine_reset() 
@@ -110,10 +123,17 @@ void fake68_state::machine_reset()
 void fake68_state::machine_start()
 {
     printf("%s\n", __PRETTY_FUNCTION__);
+
     m_did_bootvect_hack = false;
+
     m_tick_timer = timer_alloc(FUNC(fake68_state::tick_timer), this);
     m_tick_timer->adjust(attotime::from_hz(100), 0, attotime::from_hz(100));
     m_tick_timer->enable(false);
+
+    m_ramdisk_data = make_unique_clear<uint8_t[]>(RAMDISK_SIZE);
+    m_ramdisk->set_base(&m_ramdisk_data[0], RAMDISK_SIZE);
+
+    save_pointer(NAME(m_ramdisk_data), RAMDISK_SIZE);
 }
 
 uint8_t fake68_state::mc68681_read(offs_t offset)
@@ -128,13 +148,14 @@ void fake68_state::mc68681_write(offs_t offset, uint8_t data)
 
 void fake68_state::main_map(address_map &map)
 {
-    map(0x00000000, 0x00000007).rw(FUNC(fake68_state::bootvect_r), FUNC(fake68_state::bootvect_w)),
+    map(0x00000000, 0x00000007).rw(FUNC(fake68_state::bootvect_r), FUNC(fake68_state::bootvect_w));
     map(0x00000008, 0x07ffffff).ram();
+    map(RAMDISK_BASE, RAMDISK_END).rw(FUNC(fake68_state::ramdisk_r), FUNC(fake68_state::ramdisk_w));
     map(0xfe000000, 0xfeffffff).rom().region("eprom", 0);
-    map(0xffff8000, 0xffff8fff).rw(FUNC(fake68_state::remap_r), FUNC(fake68_state::remap_w)),
-    map(0xffff9800, 0xffff9fff).rw(FUNC(fake68_state::timer_on_r), FUNC(fake68_state::timer_on_w)),
-    map(0xffff9000, 0xffff97ff).rw(FUNC(fake68_state::timer_off_r), FUNC(fake68_state::timer_off_w)),
-    map(0xffffe000, 0xffffefff).rw(FUNC(fake68_state::cf_r), FUNC(fake68_state::cf_w)),
+    map(0xffff8000, 0xffff8fff).rw(FUNC(fake68_state::remap_r), FUNC(fake68_state::remap_w));
+    map(0xffff9800, 0xffff9fff).rw(FUNC(fake68_state::timer_on_r), FUNC(fake68_state::timer_on_w));
+    map(0xffff9000, 0xffff97ff).rw(FUNC(fake68_state::timer_off_r), FUNC(fake68_state::timer_off_w));
+    map(0xffffe000, 0xffffefff).rw(FUNC(fake68_state::cf_r), FUNC(fake68_state::cf_w));
     map(0xfffff000, 0xffffffff).rw(FUNC(fake68_state::mc68681_read), FUNC(fake68_state::mc68681_write));
 }
 
@@ -253,6 +274,16 @@ void fake68_state::duart_output(uint8_t data)
     display_7seg(data);
 }
 
+uint8_t fake68_state::ramdisk_r(offs_t offset)
+{
+    return m_ramdisk_data[offset];
+}
+
+void fake68_state::ramdisk_w(offs_t offset, uint8_t data)
+{
+    m_ramdisk_data[offset] = data;
+}
+
 static INPUT_PORTS_START(fake68)
 INPUT_PORTS_END
 
@@ -289,6 +320,8 @@ void fake68_state::fake68(machine_config &config)
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
     m_duart->irq_cb().set(FUNC(fake68_state::duart_irq_handler));
     m_duart->outport_cb().set(FUNC(fake68_state::duart_output));
+
+    NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
     RS232_PORT(config, m_rs232_a, default_rs232_devices, "terminal");
     m_rs232_a->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_a));
