@@ -24,7 +24,13 @@
 #include "osdepend.h"
 #include "strconv.h"
 
+// standard SDL headers
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 // only for oslog callback
 #include <functional>

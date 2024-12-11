@@ -10,7 +10,12 @@
 #include "modules/lib/osdobj_common.h"
 #include "modules/osdmodule.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <cassert>
 #include <chrono>
@@ -185,7 +190,11 @@ private:
 	void extract_video_config();
 	void output_oslog(const char *buffer);
 
-	void process_window_event(SDL_Event const &event);
+#if defined(MAME_SDL3)
+	void process_window_event(SDL_Event const &event, SDL_Event const &window_event);
+#else
+	void process_window_event(SDL_Event const &event, SDL_WindowEvent const &window_event);
+#endif
 	void process_textinput_event(SDL_Event const &event);
 
 	bool mouse_over_window() const { return m_mouse_over_window > 0; }

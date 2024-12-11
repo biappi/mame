@@ -49,7 +49,13 @@ typedef uint64_t HashT;
 
 // standard SDL headers
 #define TOBEMIGRATED 1
+
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #endif // !defined(OSD_WINDOWS && !defined(OSD_MAC)
 
@@ -1247,7 +1253,9 @@ int renderer_ogl::draw(const int update)
 		    assuming you do support Retina.  SDL 2.0.11 is scheduled to fix this, but it's not out yet.
 		    So we double-scale everything if you're on 10.15 or later and SDL is not at least version 2.0.11.
 		*/
-		#if defined(SDLMAME_MACOSX) && !defined(OSD_MAC)
+		#if defined(SDLMAME_MACOSX) && !defined(OSD_MAC) && defined(MAME_SDL3)
+        // always do for sdl3 ?
+		#elif defined(SDLMAME_MACOSX) && !defined(OSD_MAC) && !defined(MAME_SDL3)
 		SDL_version sdlVers;
 		SDL_GetVersion(&sdlVers);
 		// Only do this if SDL is not at least 2.0.11.

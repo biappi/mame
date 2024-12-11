@@ -14,7 +14,12 @@
 #include "modules/osdwindow.h"
 #include "osdsync.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <chrono>
 #include <cstdint>

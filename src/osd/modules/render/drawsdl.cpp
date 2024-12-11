@@ -30,7 +30,12 @@
 
 //#include "ui/uimain.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 // standard C headers
 #include <cmath>
@@ -59,7 +64,11 @@ struct sdl_scale_mode
 	int             mult_w;             /* Width multiplier      */
 	int             mult_h;             /* Height multiplier     */
 	const char      *sdl_scale_mode_hint;        /* what to use as a hint ? */
+#if defined(MAME_SDL3)
+	SDL_PixelFormat pixel_format;       /* Pixel/Overlay format  */
+#else
 	int             pixel_format;       /* Pixel/Overlay format  */
+#endif
 	void            (*yuv_blit)(const uint16_t *bitmap, uint8_t *ptr, const int pitch, const uint32_t *lookup, const int width, const int height);
 };
 
@@ -141,15 +150,24 @@ static void yuv_RGB_to_YUY2X2(const uint16_t *bitmap, uint8_t *ptr, const int pi
 
 void renderer_sdl1::setup_texture(const osd_dim &size)
 {
+#if defined(MAME_SDL3)
+	SDL_PixelFormat fmt;
+
+	// Determine preferred pixelformat and set up yuv if necessary
+	auto mode = SDL_GetCurrentDisplayMode(window().monitor()->oshandle());
+
+	fmt = (m_scale_mode.pixel_format ? m_scale_mode.pixel_format : mode->format);
+#else
 	SDL_DisplayMode mode;
 	uint32_t fmt;
 
 	// Determine preferred pixelformat and set up yuv if necessary
 	SDL_GetCurrentDisplayMode(window().monitor()->oshandle(), &mode);
 
-	m_yuv_bitmap.reset();
-
 	fmt = (m_scale_mode.pixel_format ? m_scale_mode.pixel_format : mode.format);
+#endif
+
+	m_yuv_bitmap.reset();
 
 	if (m_scale_mode.is_scale)
 	{
@@ -185,6 +203,9 @@ void renderer_sdl1::setup_texture(const osd_dim &size)
 //  drawsdl_show_info
 //============================================================
 
+#if defined(MAME_SDL3)
+// #warning TODO
+#else
 void renderer_sdl1::show_info(struct SDL_RendererInfo *render_info)
 {
 #define RF_ENTRY(x) {x, #x }
@@ -211,6 +232,7 @@ void renderer_sdl1::show_info(struct SDL_RendererInfo *render_info)
 		if (render_info->flags & rflist[i].flag)
 			osd_printf_verbose("renderer: flag %s\n", rflist[i].name);
 }
+#endif
 
 //============================================================
 //  renderer_sdl2::create
@@ -220,44 +242,79 @@ int renderer_sdl1::create()
 {
 	// create renderer
 
+#if defined(MAME_SDL3)
+	auto props = SDL_CreateProperties();
+
+	if (!props)
+		goto fail;
+
+	if (!SDL_SetNumberProperty(props, SDL_PROP_RENDERER_VSYNC_NUMBER, video_config.waitvsync ? 1 : 0))
+		goto fail;
+
+	m_sdl_renderer = SDL_CreateRendererWithProperties(props);
+
+	if (!m_sdl_renderer)
+	{
+		if (!SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, SDL_SOFTWARE_RENDERER))
+			goto fail;
+
+		m_sdl_renderer = SDL_CreateRendererWithProperties(props);
+	}
+
+fail:
+
+#else
+	auto plat_win = dynamic_cast<sdl_window_info &>(window()).platform_window();
 	/* set hints ... */
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, m_scale_mode.sdl_scale_mode_hint);
 
-
 	if (video_config.waitvsync)
-		m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+		m_sdl_renderer = SDL_CreateRenderer(plat_win, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
 	else
-		m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_ACCELERATED);
+		m_sdl_renderer = SDL_CreateRenderer(plat_win, -1, SDL_RENDERER_ACCELERATED);
 
 	if (!m_sdl_renderer)
 	{
 		if (video_config.waitvsync)
-			m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_SOFTWARE);
+			m_sdl_renderer = SDL_CreateRenderer(plat_win, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_SOFTWARE);
 		else
-			m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_SOFTWARE);
+			m_sdl_renderer = SDL_CreateRenderer(plat_win, -1, SDL_RENDERER_SOFTWARE);
 	}
+#endif
 
 	if (!m_sdl_renderer)
 	{
 		fatalerror("Error on creating renderer: %s\n", SDL_GetError());
 	}
 
+#if defined(MAME_SDL3)
+	// #warning TODO
+#else
 	struct SDL_RendererInfo render_info;
 
 	SDL_GetRendererInfo(m_sdl_renderer, &render_info);
 	show_info(&render_info);
+#endif
 
 	// Check scale mode
 
 	if (m_scale_mode.pixel_format)
 	{
-		int i;
 		int found = 0;
 
-		for (i=0; i < render_info.num_texture_formats; i++)
+#if defined(MAME_SDL3)
+		auto props = SDL_GetRendererProperties(m_sdl_renderer);
+		auto text_fmts_p = SDL_GetPointerProperty(props, SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, nullptr);
+		auto texture_formats = reinterpret_cast<SDL_PixelFormat *>(text_fmts_p);
+
+		while (texture_formats++)
+			if (m_scale_mode.pixel_format == *texture_formats)
+				found == 1;
+#else
+		for (int i=0; i < render_info.num_texture_formats; i++)
 			if (m_scale_mode.pixel_format == render_info.texture_formats[i])
 				found = 1;
-
+#endif
 		if (!found)
 		{
 			fatalerror("window: Scale mode %s not supported!", m_scale_mode.name);
@@ -345,12 +402,20 @@ int renderer_sdl1::draw(int update)
 	// lock it if we need it
 
 	{
+#if defined(MAME_SDL3)
+		auto props = SDL_GetTextureProperties(m_texture_id);
+		auto format_n = SDL_GetNumberProperty(props, SDL_PROP_TEXTURE_FORMAT_NUMBER, 0);
+		auto format = (SDL_PixelFormat)format_n;
+		SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
+		bpp = bpp / 8; /* convert to bytes per pixels */
+#else
 		Uint32 format;
 		int access, w, h;
 
 		SDL_QueryTexture(m_texture_id, &format, &access, &w, &h);
 		SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
 		bpp = bpp / 8; /* convert to bytes per pixels */
+#endif
 	}
 
 	// Clear if necessary
@@ -397,7 +462,11 @@ int renderer_sdl1::draw(int update)
 
 	window().m_primlist->acquire_lock();
 
-	int mamewidth, mameheight;
+#if defined(MAME_SDL3)
+	float mamewidth, mameheight;
+	SDL_GetTextureSize(m_texture_id, &mamewidth, &mameheight);
+#else
+		int mamewidth, mameheight;
 
 		Uint32 fmt = 0;
 		int access = 0;
@@ -405,11 +474,12 @@ int renderer_sdl1::draw(int update)
 		mamewidth /= m_scale_mode.mult_w;
 		mameheight /= m_scale_mode.mult_h;
 	//printf("w h %d %d %d %d\n", mamewidth, mameheight, blitwidth, blitheight);
+#endif
 
 	// rescale bounds
 	float fw = (float) mamewidth / (float) blitwidth;
 	float fh = (float) mameheight / (float) blitheight;
-
+;
 	// FIXME: this could be a lot easier if we get the primlist here!
 	//          Bounds would be set fit for purpose and done!
 
@@ -468,8 +538,11 @@ int renderer_sdl1::draw(int update)
 	// unlock and flip
 	SDL_UnlockTexture(m_texture_id);
 	{
+#if defined(MAME_SDL3)
+		SDL_FRect r;
+#else
 		SDL_Rect r;
-
+#endif
 		r.x=hofs;
 		r.y=vofs;
 		r.w=blitwidth;
@@ -763,9 +836,9 @@ int video_sdl1::get_scale_mode(char const *modestr)
 }
 
 sdl_scale_mode const video_sdl1::s_scale_modes[] = {
-		{ "none",    0, 0, 1, 1, DRAW2_SCALEMODE_NEAREST, 0,                    nullptr },
-		{ "hwblit",  1, 0, 1, 1, DRAW2_SCALEMODE_LINEAR,  0,                    nullptr },
-		{ "hwbest",  1, 0, 1, 1, DRAW2_SCALEMODE_BEST,    0,                    nullptr },
+		{ "none",    0, 0, 1, 1, DRAW2_SCALEMODE_NEAREST, {},                    nullptr },
+		{ "hwblit",  1, 0, 1, 1, DRAW2_SCALEMODE_LINEAR,  {},                    nullptr },
+		{ "hwbest",  1, 0, 1, 1, DRAW2_SCALEMODE_BEST,    {},                    nullptr },
 		/* SDL1.2 uses interpolation as well */
 		{ "yv12",    1, 1, 1, 1, DRAW2_SCALEMODE_BEST,    SDL_PIXELFORMAT_YV12, yuv_RGB_to_YV12 },
 		{ "yv12x2",  1, 1, 2, 2, DRAW2_SCALEMODE_BEST,    SDL_PIXELFORMAT_YV12, yuv_RGB_to_YV12X2 },

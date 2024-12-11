@@ -23,6 +23,12 @@
 #include <cstring>
 
 
+#if defined(MAME_SDL3)
+#define MAME_SDL_IS_FAILURE(x) ( x == false )
+#else
+#define MAME_SDL_IS_FAILURE(x) ( x != 0 )
+#endif
+
 namespace {
 
 //============================================================
@@ -105,6 +111,9 @@ void osd_sdl_info()
 	osd_printf_verbose("\n");
 
 	osd_printf_verbose("Current Videodriver: %s\n", SDL_GetCurrentVideoDriver());
+#if defined(MAME_SDL3)
+	// # warning TODO
+#else
 	num = SDL_GetNumVideoDisplays();
 	for (int i = 0; i < num; i++)
 	{
@@ -124,7 +133,7 @@ void osd_sdl_info()
 			osd_printf_verbose("\t\t\t%10s (%dx%d)\n", info.name, info.max_texture_width, info.max_texture_height);
 		}
 	}
-
+#endif
 	osd_printf_verbose("Available audio drivers: \n");
 	num = SDL_GetNumAudioDrivers();
 	for (int i = 0; i < num; i++)
@@ -268,6 +277,15 @@ void sdl_osd_interface::init(running_machine &machine)
 	{
 		if (m_enable_touch)
 		{
+#if defined(MAME_SDL3)
+			auto touchDevice = SDL_GetTouchDevices(nullptr);
+			while (touchDevice++)
+			{
+				auto device = *touchDevice;
+				if (device)
+					map_pointer_device(device);
+			}
+#else
 			int const count(SDL_GetNumTouchDevices());
 			m_ptrdev_map.reserve(std::max<int>(count + 1, 8));
 			map_pointer_device(SDL_MOUSE_TOUCHID);
@@ -277,6 +295,7 @@ void sdl_osd_interface::init(running_machine &machine)
 				if (device)
 					map_pointer_device(device);
 			}
+#endif
 		}
 		else
 		{
@@ -295,9 +314,9 @@ void sdl_osd_interface::init(running_machine &machine)
 #endif
 	/* Initialize SDL */
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO))
+	if (MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_VIDEO)))
 	{
-		osd_printf_error("Could not initialize SDL %s\n", SDL_GetError());
+		osd_printf_error("Could not initialize SDL video subsystem %s\n", SDL_GetError());
 		exit(-1);
 	}
 
@@ -314,11 +333,18 @@ void sdl_osd_interface::init(running_machine &machine)
 	}
 
 
-
+#if defined(MAME_SDL3)
+#ifdef SDLMAME_EMSCRIPTEN
+	SDL_SetEventEnabled(SDL_EVENT_TEXT_INPUT, false);
+#else
+	SDL_SetEventEnabled(SDL_EVENT_TEXT_INPUT, true);
+#endif
+#else
 #ifdef SDLMAME_EMSCRIPTEN
 	SDL_EventState(SDL_TEXTINPUT, SDL_FALSE);
 #else
 	SDL_EventState(SDL_TEXTINPUT, SDL_TRUE);
+#endif
 #endif
 }
 
@@ -470,6 +496,14 @@ void sdl_osd_interface::process_events_buf()
 	SDL_PumpEvents();
 }
 
+#if defined(MAME_SDL3)
+#define MAME_SDL_EVENT_KEYSYM( e , x ) e . key . x
+#define sym key
+#define fingerId fingerID
+#define touchId touchID
+#else
+#define MAME_SDL_EVENT_KEYSYM( e , x ) e . key.keysym . x
+#endif
 
 void sdl_osd_interface::process_events()
 {
@@ -480,52 +514,54 @@ void sdl_osd_interface::process_events()
 		// handle UI events
 		switch (event.type)
 		{
+#if !defined(MAME_SDL3)
 		case SDL_WINDOWEVENT:
-			process_window_event(event);
+			process_window_event(event, event.window);
 			break;
+#endif
 
 		case SDL_KEYDOWN:
-			if (event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
+			if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_LCTRL)
 				m_modifier_keys |= MODIFIER_KEY_LCTRL;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_RCTRL)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_RCTRL)
 				m_modifier_keys |= MODIFIER_KEY_RCTRL;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_LSHIFT)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_LSHIFT)
 				m_modifier_keys |= MODIFIER_KEY_LSHIFT;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_RSHIFT)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_RSHIFT)
 				m_modifier_keys |= MODIFIER_KEY_RSHIFT;
 
-			if (event.key.keysym.sym < 0x20)
+			if (MAME_SDL_EVENT_KEYSYM(event, sym) < 0x20)
 			{
 				// push control characters - they don't arrive as text input events
-				machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), event.key.keysym.sym);
+				machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), MAME_SDL_EVENT_KEYSYM(event, sym));
 			}
 			else if (m_modifier_keys & MODIFIER_KEY_CTRL)
 			{
 				// SDL filters out control characters for text input, so they are decoded here
-				if (event.key.keysym.sym >= 0x40 && event.key.keysym.sym < 0x7f)
+				if (MAME_SDL_EVENT_KEYSYM(event, sym) >= 0x40 && MAME_SDL_EVENT_KEYSYM(event, sym) < 0x7f)
 				{
-					machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), event.key.keysym.sym & 0x1f);
+					machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), MAME_SDL_EVENT_KEYSYM(event, sym) & 0x1f);
 				}
 				else if (m_modifier_keys & MODIFIER_KEY_SHIFT)
 				{
-					if (event.key.keysym.sym == SDLK_2) // Ctrl-@ (NUL)
+					if (MAME_SDL_EVENT_KEYSYM(event, sym) == SDLK_2) // Ctrl-@ (NUL)
 						machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), 0x00);
-					else if (event.key.keysym.sym == SDLK_6) // Ctrl-^ (RS)
+					else if (MAME_SDL_EVENT_KEYSYM(event, sym) == SDLK_6) // Ctrl-^ (RS)
 						machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), 0x1e);
-					else if (event.key.keysym.sym == SDLK_MINUS) // Ctrl-_ (US)
+					else if (MAME_SDL_EVENT_KEYSYM(event, sym) == SDLK_MINUS) // Ctrl-_ (US)
 						machine().ui_input().push_char_event(osd_common_t::window_list().front()->target(), 0x1f);
 				}
 			}
 			break;
 
 		case SDL_KEYUP:
-			if (event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
+			if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_LCTRL)
 				m_modifier_keys &= ~MODIFIER_KEY_LCTRL;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_RCTRL)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_RCTRL)
 				m_modifier_keys &= ~MODIFIER_KEY_RCTRL;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_LSHIFT)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_LSHIFT)
 				m_modifier_keys &= ~MODIFIER_KEY_LSHIFT;
-			else if (event.key.keysym.scancode == SDL_SCANCODE_RSHIFT)
+			else if (MAME_SDL_EVENT_KEYSYM(event, scancode) == SDL_SCANCODE_RSHIFT)
 				m_modifier_keys &= ~MODIFIER_KEY_RSHIFT;
 			break;
 
@@ -581,7 +617,11 @@ void sdl_osd_interface::process_events()
 				unsigned button(event.button.button - 1);
 				if ((1 == button) || (2 == button))
 					button ^= 3;
+#if defined(MAME_SDL3)
+				if (event.button.down)
+#else
 				if (SDL_PRESSED == event.button.state)
+#endif
 					window->mouse_down(device, x, y, button);
 				else
 					window->mouse_up(device, x, y, button);
@@ -603,7 +643,9 @@ void sdl_osd_interface::process_events()
 						osd_printf_error("sdl_osd_interface: error allocating pointer data\n");
 						break;
 					}
-#if SDL_VERSION_ATLEAST(2, 0, 18)
+#if defined(MAME_SDL3)
+					window->mouse_wheel(device, std::lround(event.wheel.y * 120));
+#elif SDL_VERSION_ATLEAST(2, 0, 18)
 					window->mouse_wheel(device, std::lround(event.wheel.preciseY * 120));
 #else
 					window->mouse_wheel(device, event.wheel.y);
@@ -656,6 +698,11 @@ void sdl_osd_interface::process_events()
 				}
 			}
 			break;
+
+#if defined(MAME_SDL3)
+		default:
+			process_window_event(event, event);
+#endif
 		}
 
 		// let input modules do their thing
@@ -663,6 +710,14 @@ void sdl_osd_interface::process_events()
 	}
 }
 
+
+#undef MAME_SDL_EVENT_KEYSYM
+
+#if defined(MAME_SDL3)
+#undef sym
+#undef fingerId
+#undef touchId
+#endif
 
 void sdl_osd_interface::osd_exit()
 {
@@ -678,7 +733,11 @@ void sdl_osd_interface::output_oslog(const char *buffer)
 }
 
 
-void sdl_osd_interface::process_window_event(SDL_Event const &event)
+#if defined(MAME_SDL3)
+void sdl_osd_interface::process_window_event(SDL_Event const &event, SDL_Event const &window_event)
+#else
+void sdl_osd_interface::process_window_event(SDL_Event const &event, SDL_WindowEvent const &window_event)
+#endif
 {
 	auto const window = window_from_id(event.window.windowID);
 
@@ -689,7 +748,7 @@ void sdl_osd_interface::process_window_event(SDL_Event const &event)
 		return;
 	}
 
-	switch (event.window.event)
+	switch (window_event.type)
 	{
 	case SDL_WINDOWEVENT_MOVED:
 		window->notify_changed();

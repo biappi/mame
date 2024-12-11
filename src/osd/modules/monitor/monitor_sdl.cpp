@@ -18,7 +18,12 @@
 #include "osdcore.h"
 #include "window.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <algorithm>
 
@@ -44,6 +49,7 @@ public:
 private:
 	void refresh() override
 	{
+#if 0 /* unused? */
 		SDL_DisplayMode dmode;
 
 #if defined(SDLMAME_WIN32)
@@ -51,6 +57,8 @@ private:
 #else
 		SDL_GetCurrentDisplayMode(oshandle(), &dmode);
 #endif
+#endif
+
 		SDL_Rect dimensions;
 		SDL_GetDisplayBounds(oshandle(), &dimensions);
 
@@ -109,6 +117,35 @@ public:
 protected:
 	int init_internal(const osd_options& options) override
 	{
+#if defined(MAME_SDL3)
+		{
+			int i, display_count;
+			SDL_DisplayID *displays = SDL_GetDisplays(&display_count);
+			if (displays) {
+				for (i = 0; i < display_count; i++)
+				{
+					char temp[64];
+					snprintf(temp, sizeof(temp) - 1, "%s%d", OSDOPTION_SCREEN, i);
+
+					// allocate a new monitor info
+					std::shared_ptr<osd_monitor_info> monitor = std::make_shared<sdl_monitor_info>(*this, displays[i], temp, 1.0f);
+
+					osd_printf_verbose("Adding monitor %s (%d x %d)\n",
+							monitor->devicename(),
+							monitor->position_size().width(), monitor->position_size().height());
+
+					// guess the aspect ratio assuming square pixels
+					monitor->set_aspect(static_cast<float>(monitor->position_size().width()) / static_cast<float>(monitor->position_size().height()));
+
+					// hook us into the list
+					add_monitor(monitor);
+				}
+
+				SDL_free(displays);
+			}
+
+		}
+#else
 		// make a list of monitors
 		{
 			int i;
@@ -134,6 +171,8 @@ protected:
 				add_monitor(monitor);
 			}
 		}
+#endif
+
 		osd_printf_verbose("Leave init_monitors\n");
 
 		return 0;
