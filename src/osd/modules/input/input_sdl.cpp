@@ -2545,7 +2545,7 @@ protected:
 		SDL_JoystickGUID guid = SDL_JoystickGetGUID(joy);
 		char guid_str[256];
 		guid_str[0] = '\0';
-#if MAME_SDL3
+#if defined(MAME_SDL3)
 		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
 #else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
@@ -2599,7 +2599,7 @@ protected:
 		char guid_str[256];
 		guid_str[0] = '\0';
 
-#if MAME_SDL3
+#if defined(MAME_SDL3)
 		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
 #else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);

@@ -271,23 +271,34 @@ void sdl_osd_interface::init(running_machine &machine)
 		if (m_enable_touch)
 		{
 #if defined(MAME_SDL3)
-			auto touchDevice = SDL_GetTouchDevices(nullptr);
-			while (touchDevice++)
+			int count;
+			auto touch_devices = SDL_GetTouchDevices(&count);
+
+			if (!touch_devices)
 			{
-				auto device = *touchDevice;
-				if (device)
-					map_pointer_device(device);
+				osd_printf_error("cannot enumerate touch devices\n");
+				return;
 			}
+
 #else
 			int const count(SDL_GetNumTouchDevices());
+#endif
+
 			m_ptrdev_map.reserve(std::max<int>(count + 1, 8));
 			map_pointer_device(SDL_MOUSE_TOUCHID);
+
 			for (int i = 0; count > i; ++i)
 			{
+#if defined(MAME_SDL3)
+				SDL_TouchID const device(touch_devices[i]);
+#else
 				SDL_TouchID const device(SDL_GetTouchDevice(i));
+#endif
 				if (device)
 					map_pointer_device(device);
 			}
+#if defined(MAME_SDL3)
+			SDL_free(touch_devices);
 #endif
 		}
 		else

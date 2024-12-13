@@ -307,9 +307,9 @@ fail:
 		auto text_fmts_p = SDL_GetPointerProperty(props, SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, nullptr);
 		auto texture_formats = reinterpret_cast<SDL_PixelFormat *>(text_fmts_p);
 
-		while (texture_formats++)
+		for ( ; texture_formats && *texture_formats; texture_formats++)
 			if (m_scale_mode.pixel_format == *texture_formats)
-				found == 1;
+				found = 1;
 #else
 		for (int i=0; i < render_info.num_texture_formats; i++)
 			if (m_scale_mode.pixel_format == render_info.texture_formats[i])

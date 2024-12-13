@@ -768,6 +768,10 @@ osd_dim sdl_window_info::pick_best_mode()
 		}
 	}
 
+#if defined(MAME_SDL3)
+	SDL_free(modes);
+#endif
+
 	return ret;
 }
 
