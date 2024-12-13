@@ -590,26 +590,31 @@ static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window)
 #if defined(OSD_SDL) && defined(MAME_SDL3)
 static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window)
 {
-	[[maybe_unused]] auto video_drv = SDL_GetCurrentVideoDriver();
-	[[maybe_unused]] auto win_props = SDL_GetWindowProperties(window);
+	auto video_drv = SDL_GetCurrentVideoDriver();
+	auto win_props = SDL_GetWindowProperties(window);
 
-#if defined(SDL_VIDEO_DRIVER_WINDOWS)
+#if defined(SDL_PLATFORM_WIN32)
 	if (strcmp(video_drv, "windows") == 0)
 		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL), true);
 #endif
-#if defined(SDL_VIDEO_DRIVER_X11)
+#if defined(SDL_PLATFORM_LINUX)
 	if (strcmp(video_drv, "x11") == 0)
 		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL), true);
+
+	if (strcmp(video_drv, "wayland") == 0) {
+		struct wl_surface *surface = (struct wl_surface *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+		void *const platform_window = osd::create_wl_egl_window(window, surface);
+
+		return std::make_pair(nullptr, false);
+	}
 #endif
-#if defined(SDL_VIDEO_DRIVER_COCOA)
+#if defined(SDL_PLATFORM_MACOS)
 	if (strcmp(video_drv, "cocoa") == 0)
 		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL), true);
 #endif
-#if defined(SDL_VIDEO_DRIVER_WAYLAND)
-	// #warning TODO
-#endif
-#if defined(SDL_VIDEO_DRIVER_ANDROID)
-	// #warning TODO
+#if defined(SDL_PLATFORM_ANDROID)
+	if (strcmp(video_drv, "android") == 0)
+		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL), true);
 #endif
 	return std::make_pair(nullptr, false);
 }
