@@ -36,8 +36,14 @@
 		#include <OpenGL/gl.h>
 		#include <OpenGL/glext.h>
 	#else
-		#include <SDL2/SDL_version.h>
-		#include <SDL2/SDL_opengl.h>
+		#if defined(MAME_SDL3)
+			#define SDL_ENABLE_OLD_NAMES
+			#include <SDL3/SDL.h>
+			#include <SDL3/SDL_opengl.h>
+		#else
+			#include <SDL2/SDL_version.h>
+			#include <SDL2/SDL_opengl.h>
+		#endif
 	#endif
 
 	class osd_gl_context

@@ -28,7 +28,12 @@
 #endif
 
 #if defined(OSD_SDL) || defined(SDLMAME_WIN32)
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 #define KEY_TRANS_SDL(sdlsc) SDL_SCANCODE_##sdlsc,
 #else
 #define KEY_TRANS_SDL(sdlsc)
@@ -179,7 +184,9 @@ key_trans_entry keyboard_trans_table::s_default_table[] =
 	KEY_TRANS_ENTRY0(OTHER_SWITCH, AC_STOP,        WEBSTOP,        VK_BROWSER_STOP,        0,        "NAVSTOP"),
 	KEY_TRANS_ENTRY0(OTHER_SWITCH, AC_FORWARD,     WEBFORWARD,     VK_BROWSER_FORWARD,     0,        "NAVFORWARD"),
 	KEY_TRANS_ENTRY0(OTHER_SWITCH, AC_BACK,        WEBBACK,        VK_BROWSER_BACK,        0,        "NAVBACK"),
+#if !defined(MAME_SDL3)
 	KEY_TRANS_ENTRY0(OTHER_SWITCH, MAIL,           MAIL,           VK_LAUNCH_MAIL,         0,        "MAIL"),
+#endif
 	KEY_TRANS_ENTRY0(OTHER_SWITCH, MEDIASELECT,    MEDIASELECT,    VK_LAUNCH_MEDIA_SELECT, 0,        "MEDIASEL"),
 
 	// sentinel

@@ -22,7 +22,10 @@
 #include "window.h"
 
 // standard SDL headers
+#if !defined(MAME_SDL3)
 #include <SDL2/SDL_syswm.h>
+#endif
+
 
 // standard C headers
 #include <algorithm>
@@ -79,23 +82,39 @@ bool sdl_osd_interface::window_init()
 	// The code below will document which hints were set.
 	char const *const hints[] = {
 			SDL_HINT_FRAMEBUFFER_ACCELERATION,
-			SDL_HINT_RENDER_DRIVER, SDL_HINT_RENDER_OPENGL_SHADERS,
-			SDL_HINT_RENDER_SCALE_QUALITY,
-			SDL_HINT_RENDER_VSYNC,
+			SDL_HINT_RENDER_DRIVER,
+
+#if !defined(MAME_SDL3)
+			// Not supported anymore
+			SDL_HINT_RENDER_OPENGL_SHADERS,
 			SDL_HINT_VIDEO_X11_XVIDMODE, SDL_HINT_VIDEO_X11_XINERAMA,
-			SDL_HINT_VIDEO_X11_XRANDR, SDL_HINT_GRAB_KEYBOARD,
-			SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, SDL_HINT_IDLE_TIMER_DISABLED,
+			SDL_HINT_RENDER_SCALE_QUALITY,
+			SDL_HINT_ACCELEROMETER_AS_JOYSTICK,
+			SDL_HINT_WINRT_PRIVACY_POLICY_URL, SDL_HINT_WINRT_PRIVACY_POLICY_LABEL,
+			SDL_HINT_WINRT_HANDLE_BACK_BUTTON,
+			SDL_HINT_VIDEO_HIGHDPI_DISABLED,
+#endif
+
+#if !defined(MAME_SDL3)
+			// TODO
+			SDL_HINT_GRAB_KEYBOARD,
+			SDL_HINT_IDLE_TIMER_DISABLED,
+
+			// windows?
+			SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT,
+#endif
+			SDL_HINT_RENDER_VSYNC,
+			SDL_HINT_VIDEO_X11_XRANDR,
+			SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS,
 			SDL_HINT_ORIENTATIONS,
 			SDL_HINT_XINPUT_ENABLED, SDL_HINT_GAMECONTROLLERCONFIG,
 			SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, SDL_HINT_ALLOW_TOPMOST,
 			SDL_HINT_TIMER_RESOLUTION,
 			SDL_HINT_RENDER_DIRECT3D_THREADSAFE, SDL_HINT_VIDEO_ALLOW_SCREENSAVER,
-			SDL_HINT_ACCELEROMETER_AS_JOYSTICK, SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK,
-			SDL_HINT_VIDEO_WIN_D3DCOMPILER, SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT,
+			SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK,
+			SDL_HINT_VIDEO_WIN_D3DCOMPILER,
 			SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, SDL_HINT_MOUSE_RELATIVE_MODE_WARP,
-			SDL_HINT_RENDER_DIRECT3D11_DEBUG, SDL_HINT_VIDEO_HIGHDPI_DISABLED,
-			SDL_HINT_WINRT_PRIVACY_POLICY_URL, SDL_HINT_WINRT_PRIVACY_POLICY_LABEL,
-			SDL_HINT_WINRT_HANDLE_BACK_BUTTON,
+			SDL_HINT_RENDER_DIRECT3D11_DEBUG,
 			};
 
 	osd_printf_verbose("\nHints:\n");
@@ -136,8 +155,14 @@ void sdl_window_info::capture_pointer()
 {
 	if (!m_mouse_captured)
 	{
+#if defined(MAME_SDL3)
+		SDL_SetWindowMouseGrab(platform_window(), true);
+		SDL_SetWindowKeyboardGrab(platform_window(), true);
+		SDL_SetWindowRelativeMouseMode(platform_window(), true);
+#else
 		SDL_SetWindowGrab(platform_window(), SDL_TRUE);
 		SDL_SetRelativeMouseMode(SDL_TRUE);
+#endif
 		m_mouse_captured = true;
 	}
 }
@@ -146,8 +171,14 @@ void sdl_window_info::release_pointer()
 {
 	if (m_mouse_captured)
 	{
+#if defined(MAME_SDL3)
+		SDL_SetWindowMouseGrab(platform_window(), false);
+		SDL_SetWindowKeyboardGrab(platform_window(), false);
+		SDL_SetWindowRelativeMouseMode(platform_window(), false);
+#else
 		SDL_SetWindowGrab(platform_window(), SDL_FALSE);
 		SDL_SetRelativeMouseMode(SDL_FALSE);
+#endif
 		m_mouse_captured = false;
 	}
 }
@@ -156,7 +187,11 @@ void sdl_window_info::hide_pointer()
 {
 	if (!m_mouse_hidden)
 	{
+#if defined(MAME_SDL3)
+		SDL_HideCursor();
+#else
 		SDL_ShowCursor(SDL_DISABLE);
+#endif
 		m_mouse_hidden = true;
 	}
 }
@@ -165,7 +200,11 @@ void sdl_window_info::show_pointer()
 {
 	if (m_mouse_hidden)
 	{
+#if defined(MAME_SDL3)
+		SDL_ShowCursor();
+#else
 		SDL_ShowCursor(SDL_ENABLE);
+#endif
 		m_mouse_hidden = false;
 	}
 }
@@ -670,6 +709,16 @@ osd_dim sdl_window_info::pick_best_mode()
 	}
 
 	// FIXME: this should be provided by monitor !
+#if defined(MAME_SDL3)
+	auto primary_monitor = SDL_GetPrimaryDisplay();
+	auto modes = SDL_GetFullscreenDisplayModes(primary_monitor, &num);
+
+	if (!modes)
+	{
+		osd_printf_error("SDL: No modes available?!\n");
+		exit(-1);
+	}
+#else
 	num = SDL_GetNumDisplayModes(monitor()->oshandle());
 
 	if (num == 0)
@@ -677,13 +726,17 @@ osd_dim sdl_window_info::pick_best_mode()
 		osd_printf_error("SDL: No modes available?!\n");
 		exit(-1);
 	}
-	else
+#endif
+
 	{
 		for (i = 0; i < num; ++i)
 		{
+#if defined(MAME_SDL3)
+			SDL_DisplayMode mode = *modes[num];
+#else
 			SDL_DisplayMode mode;
 			SDL_GetDisplayMode(monitor()->oshandle(), i, &mode);
-
+#endif
 			// compute initial score based on difference between target and current
 			size_score = 1.0f / (1.0f + abs((int32_t)mode.w - target_width) + abs((int32_t)mode.h - target_height));
 
@@ -714,6 +767,11 @@ osd_dim sdl_window_info::pick_best_mode()
 
 		}
 	}
+
+#if defined(MAME_SDL3)
+	SDL_free(modes);
+#endif
+
 	return ret;
 }
 
@@ -863,11 +921,9 @@ int sdl_window_info::complete_create()
 
 	// create or attach to an existing window
 	SDL_Window *sdlwindow;
+// MAME_SDL3: TODO
 #ifdef SDLMAME_X11
 	const char *attach_window = downcast<sdl_options &>(machine().options()).attach_window();
-#else
-	const char *attach_window = nullptr;
-#endif
 	if (attach_window && *attach_window)
 	{
 		// we're attaching to an existing window; parse the argument
@@ -915,12 +971,32 @@ int sdl_window_info::complete_create()
 		}
 	}
 	else
+#endif
 	{
 		// create the SDL window
+#if defined(MAME_SDL3)
+		SDL_PropertiesID props = SDL_CreateProperties();
+		if (!props) {
+			osd_printf_error("SDL: cannot create properties: %s\n", SDL_GetError());
+			return 1;
+		}
+
+		SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title().c_str());
+		SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+		SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, work.left() + (work.width() - temp.width()) / 2);
+		SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, work.top() + (work.height() - temp.height()) / 2);
+		SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, temp.width());
+		SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, temp.height());
+		SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, m_extra_flags | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+
+		sdlwindow = SDL_CreateWindowWithProperties(props);
+		SDL_DestroyProperties(props);
+#else
 		sdlwindow = SDL_CreateWindow(title().c_str(),
 			work.left() + (work.width() - temp.width()) / 2,
 			work.top() + (work.height() - temp.height()) / 2,
 			temp.width(), temp.height(), m_extra_flags);
+#endif
 	}
 
 	//window().sdl_window() = SDL_CreateWindow(window().m_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -940,9 +1016,14 @@ int sdl_window_info::complete_create()
 
 	if (fullscreen() && video_config.switchres)
 	{
+#if defined(MAME_SDL3)
+		const SDL_DisplayMode *modep = SDL_GetWindowFullscreenMode(platform_window());
+		SDL_DisplayMode mode = *modep;
+#else
 		SDL_DisplayMode mode;
 		//SDL_GetCurrentDisplayMode(window().monitor()->handle, &mode);
 		SDL_GetWindowDisplayMode(platform_window(), &mode);
+#endif
 		m_original_mode = mode;
 		mode.w = temp.width();
 		mode.h = temp.height();
@@ -985,8 +1066,12 @@ int sdl_window_info::complete_create()
 		return 1;
 
 	// Make sure we have a consistent state
+#if defined(MAME_SDL3)
+	SDL_ShowCursor();
+#else
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_ShowCursor(SDL_ENABLE);
+#endif
 
 	return 0;
 }

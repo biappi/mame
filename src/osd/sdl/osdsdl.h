@@ -10,7 +10,12 @@
 #include "modules/lib/osdobj_common.h"
 #include "modules/osdmodule.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <cassert>
 #include <chrono>
@@ -40,6 +45,13 @@
 #define SDLENV_AUDIODRIVER              "SDL_AUDIODRIVER"
 #define SDLENV_RENDERDRIVER             "SDL_VIDEO_RENDERER"
 
+// SDL3 compatibility helper
+
+#if defined(MAME_SDL3)
+#define MAME_SDL_IS_FAILURE(x) ( x == false )
+#else
+#define MAME_SDL_IS_FAILURE(x) ( x != 0 )
+#endif
 
 //============================================================
 //  TYPE DEFINITIONS
@@ -185,7 +197,11 @@ private:
 	void extract_video_config();
 	void output_oslog(const char *buffer);
 
-	void process_window_event(SDL_Event const &event);
+#if defined(MAME_SDL3)
+	void process_window_event(SDL_Event const &event, SDL_Event const &window_event);
+#else
+	void process_window_event(SDL_Event const &event, SDL_WindowEvent const &window_event);
+#endif
 	void process_textinput_event(SDL_Event const &event);
 
 	bool mouse_over_window() const { return m_mouse_over_window > 0; }

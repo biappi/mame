@@ -19,6 +19,7 @@
 // OSD headers
 #include "sdlopts.h"
 #include "window.h"
+#include "osdsdl.h"
 
 // lib/util
 #include "options.h"
@@ -28,7 +29,16 @@
 #include "render.h"
 
 // standard SDL headers
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#define MAME_PIXELFORMAT SDL_PixelFormat
+#define MAME_TEXTUREACCESS SDL_TextureAccess
+#else
 #include <SDL2/SDL.h>
+#define MAME_PIXELFORMAT Uint32
+#define MAME_TEXTUREACCESS Uint32
+#endif
 
 // standard C headers
 #include <algorithm>
@@ -95,7 +105,7 @@ private:
 
 	void set_coloralphamode(SDL_Texture *texture_id, const render_color *color);
 
-	Uint32              m_sdl_access;
+	MAME_TEXTUREACCESS m_sdl_access;
 	renderer_sdl2 *     m_renderer;
 	render_texinfo      m_texinfo;            // copy of the texture info
 	HashT               m_hash;               // hash value for the texture (must be >= pointer size)
@@ -135,7 +145,7 @@ enum SDL_TEXFORMAT_E
 struct copy_info_t
 {
 	int                 src_fmt;
-	Uint32              dst_fmt;
+	MAME_PIXELFORMAT    dst_fmt;
 	const blit_base     *blitter;
 	Uint32              bm_mask;
 	const char          *srcname;
@@ -169,7 +179,7 @@ public:
 	virtual int xy_to_render_target(const int x, const int y, int *xt, int *yt) override;
 	virtual render_primitive_list *get_primitives() override;
 
-	int RendererSupportsFormat(Uint32 format, Uint32 access, const char *sformat);
+	int RendererSupportsFormat(MAME_PIXELFORMAT format, MAME_TEXTUREACCESS access, const char *sformat);
 
 	SDL_Renderer *m_sdl_renderer;
 	copy_info_t const *const (&m_blit_info)[SDL_TEXFORMAT_LAST + 1];
@@ -327,7 +337,11 @@ void texture_info::set_coloralphamode(SDL_Texture *texture_id, const render_colo
 
 void texture_info::render_quad(const render_primitive &prim, const int x, const int y)
 {
+#if defined(MAME_SDL3)
+	SDL_FRect target_rect;
+#else
 	SDL_Rect target_rect;
+#endif
 
 	target_rect.x = x;
 	target_rect.y = y;
@@ -345,7 +359,11 @@ void texture_info::render_quad(const render_primitive &prim, const int x, const 
 
 void renderer_sdl2::render_quad(texture_info *texture, const render_primitive &prim, const int x, const int y)
 {
+#if defined(MAME_SDL3)
+	SDL_FRect target_rect;
+#else
 	SDL_Rect target_rect;
+#endif
 
 	target_rect.x = x;
 	target_rect.y = y;
@@ -380,7 +398,7 @@ void renderer_sdl2::render_quad(texture_info *texture, const render_primitive &p
 	}
 }
 
-int renderer_sdl2::RendererSupportsFormat(Uint32 format, Uint32 access, const char *sformat)
+int renderer_sdl2::RendererSupportsFormat(MAME_PIXELFORMAT format, MAME_TEXTUREACCESS access, const char *sformat)
 {
 	int i;
 	for (i = 0; fmt_support[i].format != 0; i++)
@@ -411,6 +429,9 @@ int renderer_sdl2::RendererSupportsFormat(Uint32 format, Uint32 access, const ch
 //  sdl_info::create
 //============================================================
 
+#if defined(MAME_SDL3)
+// #warning TODO: implement this
+#else
 static void drawsdl_show_info(struct SDL_RendererInfo *render_info)
 {
 #define RF_ENTRY(x) {x, #x }
@@ -439,7 +460,7 @@ static void drawsdl_show_info(struct SDL_RendererInfo *render_info)
 		if (render_info->flags & rflist[i].flag)
 			osd_printf_verbose("renderer: flag %s\n", rflist[i].name);
 }
-
+#endif
 
 int renderer_sdl2::create()
 {
@@ -449,6 +470,7 @@ int renderer_sdl2::create()
 	 * This applies to all texture operations. However, artwort is pre-scaled
 	 * and thus shouldn't be affected.
 	 */
+#if !defined(MAME_SDL3)
 	if (video_config.filter)
 	{
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
@@ -457,11 +479,30 @@ int renderer_sdl2::create()
 	{
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	}
+#endif
 
+#if defined(MAME_SDL3)
+	auto props = SDL_CreateProperties();
+	if (!props)
+		goto fail;
+
+	if (!SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, dynamic_cast<sdl_window_info &>(window()).platform_window()))
+		goto fail;
+
+	if (video_config.waitvsync)
+		if(!SDL_SetNumberProperty(props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 1))
+			goto fail;
+
+	m_sdl_renderer = SDL_CreateRendererWithProperties(props);
+
+fail:
+
+#else
 	if (video_config.waitvsync)
 		m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
 	else
 		m_sdl_renderer = SDL_CreateRenderer(dynamic_cast<sdl_window_info &>(window()).platform_window(), -1, SDL_RENDERER_ACCELERATED);
+#endif
 
 	if (!m_sdl_renderer)
 	{
@@ -475,10 +516,12 @@ int renderer_sdl2::create()
 	//SDL_RenderPresent(m_sdl_renderer);
 	osd_printf_verbose("Leave renderer_sdl2::create\n");
 
+#if !defined(MAME_SDL3)
 	struct SDL_RendererInfo render_info;
 
 	SDL_GetRendererInfo(m_sdl_renderer, &render_info);
 	drawsdl_show_info(&render_info);
+#endif
 
 	return 0;
 }
@@ -748,6 +791,11 @@ texture_info::texture_info(renderer_sdl2 *renderer, const render_texinfo &texsou
 		osd_printf_error("Error creating texture: %d x %d, pixelformat %s error: %s\n", m_setup.rotwidth, m_setup.rotheight,
 				m_copyinfo->dstname, SDL_GetError());
 
+#if defined(MAME_SDL3)
+	auto scale_mode = video_config.filter ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST;
+	SDL_SetTextureScaleMode(m_texture_id, scale_mode);
+#endif
+
 	if (m_sdl_access == SDL_TEXTUREACCESS_STATIC)
 	{
 		if (m_copyinfo->blitter->m_is_passthrough)
@@ -1008,7 +1056,7 @@ int video_sdl2::init(osd_interface &osd, osd_options const &options)
 	if (!m_gllib_loaded)
 	{
 		// No fatalerror here since not all video drivers support GL!
-		if (SDL_GL_LoadLibrary(libname) != 0)
+		if (MAME_SDL_IS_FAILURE(SDL_GL_LoadLibrary(libname)))
 		{
 			osd_printf_error("Unable to load OpenGL shared library: %s\n", libname ? libname : "<default>");
 			m_gllib_loaded = true;

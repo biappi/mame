@@ -52,7 +52,12 @@
 #if defined(OSD_MAC)
 extern void *GetOSWindow(void *wincontroller);
 #else
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL_syswm.h>
+#endif
 #endif
 #endif
 
@@ -147,7 +152,9 @@ inline renderer_bgfx::parent_module_holder::~parent_module_holder()
 	m_parent.renderer_destroyed();
 }
 
-
+#if defined(OSD_SDL)
+static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window);
+#endif
 
 //============================================================
 //  OSD MODULE
@@ -415,7 +422,6 @@ wl_egl_window *create_wl_egl_window(SDL_Window *window, struct wl_surface *surfa
 }
 #endif
 
-
 //============================================================
 //  Utility for setting up window handle
 //============================================================
@@ -428,7 +434,18 @@ bool video_bgfx::set_platform_data(bgfx::PlatformData &platform_data, osd_window
 #elif defined(OSD_MAC)
 	platform_data.ndt = nullptr;
 	platform_data.nwh = GetOSWindow(dynamic_cast<mac_window_info const &>(window).platform_window());
-#else // defined(OSD_*)
+#elif defined(OSD_SDL) && defined(MAME_SDL3)
+	auto sdl_win = dynamic_cast<sdl_window_info const &>(window).platform_window();
+	auto handle = sdlNativeWindowHandle(sdl_win);
+	if (handle.second == false)
+	{
+		osd_printf_error("BGFX: error getting SDL window handle\n");
+		return false;
+	}
+
+	platform_data.ndt = nullptr;
+	platform_data.nwh = handle.first;
+#elif defined(OSD_SDL) && !defined(MAME_SDL3)
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
 	if (!SDL_GetWindowWMInfo(dynamic_cast<sdl_window_info const &>(window).platform_window(), &wmi))
@@ -531,7 +548,7 @@ uint32_t renderer_bgfx::s_height[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 //  helper for getting native platform window
 //============================================================
 
-#ifdef OSD_SDL
+#if defined(OSD_SDL) && !defined(MAME_SDL3)
 static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window)
 {
 	SDL_SysWMinfo wmi;
@@ -570,7 +587,39 @@ static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window)
 }
 #endif // OSD_SDL
 
+#if defined(OSD_SDL) && defined(MAME_SDL3)
+static std::pair<void *, bool> sdlNativeWindowHandle(SDL_Window *window)
+{
+	auto video_drv = SDL_GetCurrentVideoDriver();
+	auto win_props = SDL_GetWindowProperties(window);
 
+#if defined(SDL_PLATFORM_WIN32)
+	if (strcmp(video_drv, "windows") == 0)
+		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL), true);
+#endif
+#if defined(SDL_PLATFORM_LINUX)
+	if (strcmp(video_drv, "x11") == 0)
+		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL), true);
+
+	if (strcmp(video_drv, "wayland") == 0) {
+		struct wl_surface *surface = (struct wl_surface *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+		void *const platform_window = osd::create_wl_egl_window(window, surface);
+
+		return std::make_pair(nullptr, false);
+	}
+#endif
+#if defined(SDL_PLATFORM_MACOS)
+	if (strcmp(video_drv, "cocoa") == 0)
+		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL), true);
+#endif
+#if defined(SDL_PLATFORM_ANDROID)
+	if (strcmp(video_drv, "android") == 0)
+		return std::make_pair(SDL_GetPointerProperty(win_props, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, NULL), true);
+#endif
+	return std::make_pair(nullptr, false);
+}
+
+#endif
 
 //============================================================
 //  renderer_bgfx - constructor

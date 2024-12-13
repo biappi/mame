@@ -28,7 +28,18 @@
 #include "inpttype.h"
 
 // standard SDL header
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+
+#define caxis gaxis
+#define cbutton gbutton
+#define ctouchpad gtouchpad
+#define csensor gsensor
+
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -508,10 +519,14 @@ key_lookup_table const sdl_lookup_table[] =
 	KE(AUDIOPLAY)
 	KE(AUDIOMUTE)
 	KE(MEDIASELECT)
+
+#if !defined(MAME_SDL3)
 	KE(WWW)
 	KE(MAIL)
 	KE(CALCULATOR)
 	KE(COMPUTER)
+#endif
+
 	KE(AC_SEARCH)
 	KE(AC_HOME)
 	KE(AC_BACK)
@@ -520,17 +535,22 @@ key_lookup_table const sdl_lookup_table[] =
 	KE(AC_REFRESH)
 	KE(AC_BOOKMARKS)
 
+#if !defined(MAME_SDL3)
 	KE(BRIGHTNESSDOWN)
 	KE(BRIGHTNESSUP)
 	KE(DISPLAYSWITCH)
 	KE(KBDILLUMTOGGLE)
 	KE(KBDILLUMDOWN)
 	KE(KBDILLUMUP)
+#endif
+
 	KE(EJECT)
 	KE(SLEEP)
 
+#if !defined(MAME_SDL3)
 	KE(APP1)
 	KE(APP2)
+#endif
 };
 
 
@@ -589,13 +609,30 @@ public:
 		switch (event.type)
 		{
 		case SDL_KEYDOWN:
+#if defined(MAME_SDL3)
+			if (event.key.scancode == SDL_SCANCODE_CAPSLOCK)
+				m_capslock_pressed = std::chrono::steady_clock::now();
+
+			m_keyboard.state[event.key.scancode] = 0x80;
+			break;
+#else
 			if (event.key.keysym.scancode == SDL_SCANCODE_CAPSLOCK)
 				m_capslock_pressed = std::chrono::steady_clock::now();
 
 			m_keyboard.state[event.key.keysym.scancode] = 0x80;
 			break;
+#endif
 
 		case SDL_KEYUP:
+#if defined(MAME_SDL3)
+#ifdef __APPLE__
+			if (event.key.scancode == SDL_SCANCODE_CAPSLOCK)
+				break;
+#endif
+
+			m_keyboard.state[event.key.scancode] = 0x00;
+			break;
+#else
 #ifdef __APPLE__
 			if (event.key.keysym.scancode == SDL_SCANCODE_CAPSLOCK)
 				break;
@@ -603,6 +640,7 @@ public:
 
 			m_keyboard.state[event.key.keysym.scancode] = 0x00;
 			break;
+#endif
 		}
 	}
 
@@ -788,7 +826,10 @@ public:
 
 		case SDL_MOUSEWHEEL:
 			// adjust SDL 1-per-click to match Win32 120-per-click
-#if SDL_VERSION_ATLEAST(2, 0, 18)
+#if defined(MAME_SDL3)
+			m_v += std::lround(event.wheel.x * 120 * input_device::RELATIVE_PER_PIXEL);
+			m_h += std::lround(event.wheel.y * 120 * input_device::RELATIVE_PER_PIXEL);
+#elif SDL_VERSION_ATLEAST(2, 0, 18)
 			m_v += std::lround(event.wheel.preciseY * 120 * input_device::RELATIVE_PER_PIXEL);
 			m_h += std::lround(event.wheel.preciseX * 120 * input_device::RELATIVE_PER_PIXEL);
 #else
@@ -890,7 +931,10 @@ public:
 
 		case SDL_MOUSEWHEEL:
 			// adjust SDL 1-per-click to match Win32 120-per-click
-#if SDL_VERSION_ATLEAST(2, 0, 18)
+#if defined(MAME_SDL3)
+			m_v += std::lround(event.wheel.x * 120 * input_device::RELATIVE_PER_PIXEL);
+			m_h += std::lround(event.wheel.y * 120 * input_device::RELATIVE_PER_PIXEL);
+#elif SDL_VERSION_ATLEAST(2, 0, 18)
 			m_v += std::lround(event.wheel.preciseY * 120 * input_device::RELATIVE_PER_PIXEL);
 			m_h += std::lround(event.wheel.preciseX * 120 * input_device::RELATIVE_PER_PIXEL);
 #else
@@ -899,10 +943,17 @@ public:
 #endif
 			break;
 
+#if defined(MAME_SDL3)
+		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+			if (event.window.windowID == m_window)
+				m_window = 0;
+			 break;
+#else
 		case SDL_WINDOWEVENT:
 			if ((event.window.windowID == m_window) && (SDL_WINDOWEVENT_LEAVE == event.window.event))
 				m_window = 0;
 			break;
+#endif
 		}
 	}
 
@@ -1361,7 +1412,11 @@ public:
 		case SDL_JOYBUTTONDOWN:
 		case SDL_JOYBUTTONUP:
 			if (event.jbutton.button < MAX_BUTTONS)
+#if defined(MAME_SDL3)
+				m_joystick.buttons[event.jbutton.button] = event.jbutton.down ? 0x80 : 0;
+#else
 				m_joystick.buttons[event.jbutton.button] = (event.jbutton.state == SDL_PRESSED) ? 0x80 : 0;
+#endif
 			break;
 
 		case SDL_JOYDEVICEREMOVED:
@@ -1538,7 +1593,7 @@ public:
 			axisnames = CONTROLLER_AXIS_PS;
 			buttonnames = CONTROLLER_BUTTON_PS5;
 			break;
-#if SDL_VERSION_ATLEAST(2, 0, 16)
+#if SDL_VERSION_ATLEAST(2, 0, 16) && !defined(MAME_SDL3)
 		//case SDL_CONTROLLER_TYPE_AMAZON_LUNA:
 		case SDL_CONTROLLER_TYPE_GOOGLE_STADIA:
 			osd_printf_verbose("Game Controller:   ...  Google Stadia type\n");
@@ -1546,12 +1601,14 @@ public:
 			buttonnames = CONTROLLER_BUTTON_STADIA;
 			break;
 #endif
-#if SDL_VERSION_ATLEAST(2, 24, 0)
+#if SDL_VERSION_ATLEAST(2, 24, 0) && !defined(MAME_SDL3)
 		case SDL_CONTROLLER_TYPE_NVIDIA_SHIELD:
 			osd_printf_verbose("Game Controller:   ...  NVIDIA Shield type\n");
 			axisnames = CONTROLLER_AXIS_XBOX;
 			buttonnames = CONTROLLER_BUTTON_SHIELD;
 			break;
+#endif
+#if SDL_VERSION_ATLEAST(2, 24, 0)
 		//case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
 		//case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
 		case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
@@ -1598,6 +1655,9 @@ public:
 			avail = avail && SDL_GameControllerHasAxis(m_ctrldevice, axis);
 			if (avail)
 			{
+#if defined(MAME_SDL3)
+				// #warning TODO: implement this
+#else
 				auto const binding = SDL_GameControllerGetBindForAxis(m_ctrldevice, axis);
 				switch (binding.bindType)
 				{
@@ -1611,6 +1671,7 @@ public:
 				default:
 					break;
 				}
+#endif
 			}
 			if (avail)
 			{
@@ -1654,6 +1715,9 @@ public:
 				avail = SDL_GameControllerHasButton(m_ctrldevice, button);
 				if (avail)
 				{
+#if defined(MAME_SDL3)
+					// #warning TODO: implement this
+#else
 					auto const binding = SDL_GameControllerGetBindForButton(m_ctrldevice, button);
 					switch (binding.bindType)
 					{
@@ -1663,6 +1727,7 @@ public:
 					default:
 						break;
 					}
+#endif
 				}
 				if (avail)
 				{
@@ -1681,6 +1746,9 @@ public:
 				avail = SDL_GameControllerHasAxis(m_ctrldevice, axis);
 				if (avail)
 				{
+#if defined(MAME_SDL3)
+					// #warning TODO: implement this
+#else
 					auto const binding = SDL_GameControllerGetBindForAxis(m_ctrldevice, axis);
 					switch (binding.bindType)
 					{
@@ -1692,6 +1760,7 @@ public:
 					default:
 						avail = digitaltriggers;
 					}
+#endif
 				}
 				if (avail)
 				{
@@ -1731,6 +1800,9 @@ public:
 			avail = SDL_GameControllerHasButton(m_ctrldevice, button);
 			if (avail)
 			{
+#if defined(MAME_SDL3)
+				// #warning TODO: implement this
+#else
 				auto const binding = SDL_GameControllerGetBindForButton(m_ctrldevice, button);
 				switch (binding.bindType)
 				{
@@ -1740,6 +1812,7 @@ public:
 				default:
 					break;
 				}
+#endif
 			}
 			if (avail)
 			{
@@ -2079,8 +2152,13 @@ public:
 
 		case SDL_CONTROLLERBUTTONDOWN:
 		case SDL_CONTROLLERBUTTONUP:
+#if defined(MAME_SDL3)
+			if (event.gbutton.button < SDL_CONTROLLER_BUTTON_MAX)
+				m_controller.buttons[event.gbutton.button] = event.gbutton.down ? 0x80 : 0x00;
+#else
 			if (event.cbutton.button < SDL_CONTROLLER_BUTTON_MAX)
 				m_controller.buttons[event.cbutton.button] = (event.cbutton.state == SDL_PRESSED) ? 0x80 : 0x00;
+#endif
 			break;
 
 		case SDL_CONTROLLERDEVICEREMOVED:
@@ -2349,7 +2427,12 @@ public:
 					int(SDL_MOUSEBUTTONDOWN),
 					int(SDL_MOUSEBUTTONUP),
 					int(SDL_MOUSEWHEEL),
-					int(SDL_WINDOWEVENT) };
+#if defined(MAME_SDL3)
+					int(SDL_EVENT_WINDOW_MOUSE_LEAVE),
+#else
+					int(SDL_WINDOWEVENT),
+#endif
+			};
 			subscribe(osd(), event_types);
 		}
 		else
@@ -2420,7 +2503,7 @@ protected:
 		assert(!m_initialized_joystick);
 		assert(!m_initialized_haptic);
 
-		m_initialized_joystick = !SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+		m_initialized_joystick = !MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_JOYSTICK));
 		if (!m_initialized_joystick)
 		{
 			osd_printf_error("Could not initialize SDL Joystick subsystem: %s.\n", SDL_GetError());
@@ -2462,7 +2545,11 @@ protected:
 		SDL_JoystickGUID guid = SDL_JoystickGetGUID(joy);
 		char guid_str[256];
 		guid_str[0] = '\0';
+#if defined(MAME_SDL3)
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
 		char const *const serial = SDL_JoystickGetSerial(joy);
 		std::string id(guid_str);
 		if (serial)
@@ -2511,7 +2598,13 @@ protected:
 	{
 		char guid_str[256];
 		guid_str[0] = '\0';
+
+#if defined(MAME_SDL3)
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
+
 		auto target_device = std::find_if(
 				devicelist().begin(),
 				devicelist().end(),
@@ -2563,7 +2656,10 @@ public:
 
 		if (!sdlopts.debug() && sdlopts.background_input())
 			SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+
+#if !defined(MAME_SDL3)
 		SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+#endif
 
 		init_joystick();
 		if (!have_joystick())
@@ -2572,9 +2668,27 @@ public:
 		sdl_joystick_module_base::input_init(machine);
 
 		osd_printf_verbose("Joystick: Start initialization\n");
+
+#if defined(MAME_SDL3)
+		int sticks_count;
+		auto sticks = SDL_GetJoysticks(&sticks_count);
+
+		if (!sticks)
+		{
+			osd_printf_error("Joystick: cannot enumerater devices\n");
+			return;
+		}
+
+		for (int i = 0; i < sticks_count; i++)
+		{
+			create_joystick_device(sticks[i], sixaxis_mode);
+		}
+
+		SDL_free(sticks);
+#else
 		for (int physical_stick = 0; physical_stick < SDL_NumJoysticks(); physical_stick++)
 			create_joystick_device(physical_stick, sixaxis_mode);
-
+#endif
 		constexpr int event_types[] = {
 				int(SDL_JOYAXISMOTION),
 				int(SDL_JOYBALLMOTION),
@@ -2583,8 +2697,8 @@ public:
 				int(SDL_JOYBUTTONUP),
 				int(SDL_JOYDEVICEADDED),
 				int(SDL_JOYDEVICEREMOVED) };
-		subscribe(osd(), event_types);
 
+		subscribe(osd(), event_types);
 		osd_printf_verbose("Joystick: End initialization\n");
 	}
 
@@ -2651,13 +2765,15 @@ public:
 
 		if (!sdlopts.debug() && sdlopts.background_input())
 			SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+#if !defined(MAME_SDL3)
 		SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+#endif
 
 		init_joystick();
 		if (!have_joystick())
 			return;
 
-		m_initialized_game_controller = !SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+		m_initialized_game_controller = !MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER));
 		if (m_initialized_game_controller)
 		{
 			char const *const mapfile = sdlopts.controller_mapping_file();
@@ -2678,8 +2794,25 @@ public:
 		sdl_joystick_module_base::input_init(machine);
 
 		osd_printf_verbose("Game Controller: Start initialization\n");
+
+#if defined(MAME_SDL3)
+		int sticks_count;
+		auto sticks = SDL_GetJoysticks(&sticks_count);
+
+		if (!sticks)
+		{
+			osd_printf_error("Game controller: cannot enumerate devices");
+			return;
+
+		}
+
+		for (int i = 0; i < sticks_count; i++)
+		{
+			auto physical_stick = sticks[i];
+#else
 		for (int physical_stick = 0; physical_stick < SDL_NumJoysticks(); physical_stick++)
 		{
+#endif
 			// try to open as a game controller
 			SDL_GameController *ctrl = nullptr;
 			if (m_initialized_game_controller && SDL_IsGameController(physical_stick))
@@ -2723,6 +2856,10 @@ public:
 			subscribe(osd(), joy_event_types);
 
 		osd_printf_verbose("Game Controller: End initialization\n");
+
+#if defined(MAME_SDL3)
+		SDL_free(sticks);
+#endif
 	}
 
 	virtual void handle_event(SDL_Event const &event) override
@@ -2731,6 +2868,8 @@ public:
 		{
 		case SDL_JOYDEVICEADDED:
 			{
+#if !defined(MAME_SDL3) /* maybe not needed? */
+
 				// make sure this isn't an event for a reconnected game controller
 				auto const controller = find_joystick(SDL_JoystickGetDeviceInstanceID(event.jdevice.which));
 				if (find_joystick(SDL_JoystickGetDeviceInstanceID(event.jdevice.which)))
@@ -2741,6 +2880,8 @@ public:
 							controller->id());
 					break;
 				}
+
+#endif
 
 				SDL_Joystick *const joy = SDL_JoystickOpen(event.jdevice.which);
 				if (!joy)
@@ -2779,7 +2920,12 @@ public:
 					break;
 				}
 
+#if defined(MAME_SDL3)
+				auto guid = SDL_GetJoystickGUIDForID(event.cdevice.which);
+#else
 				SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(event.cdevice.which);
+#endif
+
 				char const *const serial = SDL_GameControllerGetSerial(ctrl);
 				auto *const target_device = find_reconnect_match(guid, serial);
 				if (target_device)
@@ -2808,10 +2954,18 @@ private:
 	{
 		// get basic info
 		char const *const name = SDL_GameControllerName(ctrl);
-		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(index);
+
 		char guid_str[256];
 		guid_str[0] = '\0';
+
+#if defined(MAME_SDL3)
+		auto guid = SDL_GetJoystickGUIDForID(index);
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
+		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(index);
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
+
 		char const *const serial = SDL_GameControllerGetSerial(ctrl);
 		std::string id(guid_str);
 		if (serial)

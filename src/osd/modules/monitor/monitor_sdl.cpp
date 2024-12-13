@@ -18,7 +18,12 @@
 #include "osdcore.h"
 #include "window.h"
 
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <algorithm>
 
@@ -44,6 +49,7 @@ public:
 private:
 	void refresh() override
 	{
+#if 0 /* unused? */
 		SDL_DisplayMode dmode;
 
 #if defined(SDLMAME_WIN32)
@@ -51,6 +57,8 @@ private:
 #else
 		SDL_GetCurrentDisplayMode(oshandle(), &dmode);
 #endif
+#endif
+
 		SDL_Rect dimensions;
 		SDL_GetDisplayBounds(oshandle(), &dimensions);
 
@@ -112,11 +120,25 @@ protected:
 		// make a list of monitors
 		{
 			int i;
-
 			osd_printf_verbose("Enter init_monitors\n");
 
+#if defined(MAME_SDL3)
+			int display_count;
+			SDL_DisplayID *displays = SDL_GetDisplays(&display_count);
+
+			if (!displays)
+			{
+				osd_printf_error("Cannot enumerate displays");
+				return 1;
+			}
+
+			for (int k = 0; k < display_count; k++)
+			{
+				i = displays[k];
+#else
 			for (i = 0; i < SDL_GetNumVideoDisplays(); i++)
 			{
+#endif
 				char temp[64];
 				snprintf(temp, sizeof(temp) - 1, "%s%d", OSDOPTION_SCREEN, i);
 
@@ -133,7 +155,12 @@ protected:
 				// hook us into the list
 				add_monitor(monitor);
 			}
+
+#if defined(MAME_SDL3)
+			SDL_free(displays);
+#endif
 		}
+
 		osd_printf_verbose("Leave init_monitors\n");
 
 		return 0;

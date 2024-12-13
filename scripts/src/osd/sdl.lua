@@ -214,6 +214,11 @@ if not _OPTIONS["SDL_FRAMEWORK_PATH"] then
 end
 
 newoption {
+    trigger = "SDL3_INSTALL_ROOT",
+    description = "Location of SDL3 installation",
+}
+
+newoption {
 	trigger = "USE_LIBSDL",
 	description = "Use SDL library on OS (rather than framework/dll)",
 	allowed = {
@@ -261,18 +266,30 @@ if BASE_TARGETOS=="unix" then
 				"-weak_framework Metal",
 			}
 		end
-		if _OPTIONS["USE_LIBSDL"]~="1" then
+        if _OPTIONS["SDL3_INSTALL_ROOT"] then
+            buildoptions {
+                "-DMAME_SDL3=1",
+                "-I" .. _OPTIONS["SDL3_INSTALL_ROOT"] .. "/include",
+            }
 			linkoptions {
-				"-F" .. _OPTIONS["SDL_FRAMEWORK_PATH"],
+				"-L" .. _OPTIONS["SDL3_INSTALL_ROOT"] .. "/lib",
+				"-lSDL3",
+				"-Wl,-framework,CoreMedia -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,IOKit -Wl,-framework,ForceFeedback -Wl,-framework,Carbon -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AVFoundation -Wl,-framework,Foundation -Wl,-weak_framework,GameController -Wl,-weak_framework,Metal -Wl,-weak_framework,QuartzCore -Wl,-framework,CoreHaptics -lpthread -Wl,-weak_framework,UniformTypeIdentifiers -lm",
 			}
-			links {
-				"SDL2.framework",
-			}
-		else
-			local str = backtick(sdlconfigcmd() .. " --libs --static | sed 's/-lSDLmain//'")
-			addlibfromstring(str)
-			addoptionsfromstring(str)
-		end
+        else
+            if _OPTIONS["USE_LIBSDL"]~="1" then
+                linkoptions {
+                    "-F" .. _OPTIONS["SDL_FRAMEWORK_PATH"],
+                }
+                links {
+                    "SDL2.framework",
+                }
+            else
+                local str = backtick(sdlconfigcmd() .. " --libs --static | sed 's/-lSDLmain//'")
+                addlibfromstring(str)
+                addoptionsfromstring(str)
+            end
+        end
 	else
 		if _OPTIONS["NO_X11"]=="1" then
 			_OPTIONS["USE_QTDEBUG"] = "0"

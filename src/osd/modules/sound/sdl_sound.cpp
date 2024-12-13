@@ -16,9 +16,15 @@
 
 #include "modules/lib/osdobj_common.h"
 #include "osdcore.h"
+#include "osdsdl.h"
 
 // standard sdl header
+#if defined(MAME_SDL3)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #include <algorithm>
 #include <fstream>
@@ -112,6 +118,10 @@ private:
 	int              buffer_underflows;
 	int              buffer_overflows;
 	std::unique_ptr<std::ofstream> sound_log;
+
+#if defined(MAME_SDL3)
+	SDL_AudioDeviceID audio_device;
+#endif
 };
 
 
@@ -192,8 +202,10 @@ int sound_sdl::ring_buffer::pop(void *data, size_t size)
 //============================================================
 void sound_sdl::lock_buffer()
 {
+#if !defined(MAME_SDL3)
 	if (!buf_locked)
 		SDL_LockAudio();
+#endif
 	buf_locked++;
 
 	if (LOG_SOUND)
@@ -206,8 +218,10 @@ void sound_sdl::lock_buffer()
 void sound_sdl::unlock_buffer()
 {
 	buf_locked--;
+#if !defined(MAME_SDL3)
 	if (!buf_locked)
 		SDL_UnlockAudio();
+#endif
 
 	if (LOG_SOUND)
 		*sound_log << "unlocking\n";
@@ -264,7 +278,11 @@ void sound_sdl::update_audio_stream(bool is_throttled, const int16_t *buffer, in
 			stream_buffer->append(&zero, 1);
 
 		// start playing
+#if defined(MAME_SDL3)
+		SDL_ResumeAudioDevice(audio_device);
+#else
 		SDL_PauseAudio(0);
+#endif
 		stream_in_initialized = 1;
 	}
 
@@ -300,10 +318,17 @@ void sound_sdl::set_mastervolume(int _attenuation)
 
 	if (stream_in_initialized)
 	{
+#if defined(MAME_SDL3)
+		if (attenuation == -32)
+			SDL_PauseAudioDevice(audio_device);
+		else
+			SDL_ResumeAudioDevice(audio_device);
+#else
 		if (attenuation == -32)
 			SDL_PauseAudio(1);
 		else
 			SDL_PauseAudio(0);
+#endif
 	}
 }
 
@@ -355,9 +380,9 @@ int sound_sdl::init(osd_interface &osd, const osd_options &options)
 	sample_rate = options.sample_rate();
 	if (sample_rate != 0)
 	{
-		if (SDL_InitSubSystem(SDL_INIT_AUDIO))
+		if (MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_AUDIO)))
 		{
-			osd_printf_error("Could not initialize SDL %s\n", SDL_GetError());
+			osd_printf_error("Could not initialize SDL audio subsystem: %s\n", SDL_GetError());
 			return -1;
 		}
 
@@ -368,6 +393,18 @@ int sound_sdl::init(osd_interface &osd, const osd_options &options)
 		sdl_xfer_samples = SDL_XFER_SAMPLES;
 		stream_in_initialized = 0;
 
+#if defined(MAME_SDL3)
+		aspec.freq = sample_rate;
+		aspec.format = AUDIO_S16SYS;    // keep endian independent
+		aspec.channels = n_channels;
+
+		audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &aspec);
+		if (!audio_device)
+			goto cant_start_audio;
+
+		osd_printf_verbose("Audio: frequency: %d, channels: %d, samples: %d\n",
+							obtained.freq, obtained.channels, sdl_xfer_samples);
+#else
 		// set up the audio specs
 		aspec.freq = sample_rate;
 		aspec.format = AUDIO_S16SYS;    // keep endian independent
@@ -383,6 +420,7 @@ int sound_sdl::init(osd_interface &osd, const osd_options &options)
 							obtained.freq, obtained.channels, obtained.samples);
 
 		sdl_xfer_samples = obtained.samples;
+#endif
 
 		// pin audio latency
 		audio_latency = std::clamp(options.audio_latency(), 1, MAX_AUDIO_LATENCY);
@@ -426,8 +464,12 @@ void sound_sdl::exit()
 		return;
 
 	osd_printf_verbose("sdl_kill: closing audio\n");
+#if defined(MAME_SDL3)
+	SDL_CloseAudioDevice(audio_device);
+	audio_device = 0;
+#else
 	SDL_CloseAudio();
-
+#endif
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
 	// kill the buffers
