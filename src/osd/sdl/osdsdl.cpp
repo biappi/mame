@@ -22,13 +22,6 @@
 #include <cstdio>
 #include <cstring>
 
-
-#if defined(MAME_SDL3)
-#define MAME_SDL_IS_FAILURE(x) ( x == false )
-#else
-#define MAME_SDL_IS_FAILURE(x) ( x != 0 )
-#endif
-
 namespace {
 
 //============================================================

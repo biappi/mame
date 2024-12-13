@@ -2995,7 +2995,7 @@ int video_opengl::init(osd_interface &osd, osd_options const &options)
 		if (libname && (!*libname || !std::strcmp(libname, OSDOPTVAL_AUTO)))
 			libname = nullptr;
 
-		if (SDL_GL_LoadLibrary(libname) != 0)
+		if (MAME_SDL_IS_FAILURE(SDL_GL_LoadLibrary(libname)))
 		{
 			osd_printf_error("Unable to load OpenGL shared library: %s\n", libname ? libname : "<default>");
 			return -1;

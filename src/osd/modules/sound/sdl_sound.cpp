@@ -16,6 +16,7 @@
 
 #include "modules/lib/osdobj_common.h"
 #include "osdcore.h"
+#include "osdsdl.h"
 
 // standard sdl header
 #if defined(MAME_SDL3)
@@ -379,7 +380,7 @@ int sound_sdl::init(osd_interface &osd, const osd_options &options)
 	sample_rate = options.sample_rate();
 	if (sample_rate != 0)
 	{
-		if (SDL_InitSubSystem(SDL_INIT_AUDIO))
+		if (MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_AUDIO)))
 		{
 			osd_printf_error("Could not initialize SDL audio subsystem: %s\n", SDL_GetError());
 			return -1;

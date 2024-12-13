@@ -2508,7 +2508,7 @@ protected:
 		assert(!m_initialized_joystick);
 		assert(!m_initialized_haptic);
 
-		m_initialized_joystick = !SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+		m_initialized_joystick = !MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_JOYSTICK));
 		if (!m_initialized_joystick)
 		{
 			osd_printf_error("Could not initialize SDL Joystick subsystem: %s.\n", SDL_GetError());
@@ -2753,7 +2753,7 @@ public:
 		if (!have_joystick())
 			return;
 
-		m_initialized_game_controller = !SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+		m_initialized_game_controller = !MAME_SDL_IS_FAILURE(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER));
 		if (m_initialized_game_controller)
 		{
 			char const *const mapfile = sdlopts.controller_mapping_file();

@@ -19,6 +19,7 @@
 // OSD headers
 #include "sdlopts.h"
 #include "window.h"
+#include "osdsdl.h"
 
 // lib/util
 #include "options.h"
@@ -1055,7 +1056,7 @@ int video_sdl2::init(osd_interface &osd, osd_options const &options)
 	if (!m_gllib_loaded)
 	{
 		// No fatalerror here since not all video drivers support GL!
-		if (SDL_GL_LoadLibrary(libname) != 0)
+		if (MAME_SDL_IS_FAILURE(SDL_GL_LoadLibrary(libname)))
 		{
 			osd_printf_error("Unable to load OpenGL shared library: %s\n", libname ? libname : "<default>");
 			m_gllib_loaded = true;
