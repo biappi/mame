@@ -117,43 +117,28 @@ public:
 protected:
 	int init_internal(const osd_options& options) override
 	{
-#if defined(MAME_SDL3)
-		{
-			int i, display_count;
-			SDL_DisplayID *displays = SDL_GetDisplays(&display_count);
-			if (displays) {
-				for (i = 0; i < display_count; i++)
-				{
-					char temp[64];
-					snprintf(temp, sizeof(temp) - 1, "%s%d", OSDOPTION_SCREEN, i);
-
-					// allocate a new monitor info
-					std::shared_ptr<osd_monitor_info> monitor = std::make_shared<sdl_monitor_info>(*this, displays[i], temp, 1.0f);
-
-					osd_printf_verbose("Adding monitor %s (%d x %d)\n",
-							monitor->devicename(),
-							monitor->position_size().width(), monitor->position_size().height());
-
-					// guess the aspect ratio assuming square pixels
-					monitor->set_aspect(static_cast<float>(monitor->position_size().width()) / static_cast<float>(monitor->position_size().height()));
-
-					// hook us into the list
-					add_monitor(monitor);
-				}
-
-				SDL_free(displays);
-			}
-
-		}
-#else
 		// make a list of monitors
 		{
 			int i;
-
 			osd_printf_verbose("Enter init_monitors\n");
 
+#if defined(MAME_SDL3)
+			int display_count;
+			SDL_DisplayID *displays = SDL_GetDisplays(&display_count);
+
+			if (!displays)
+			{
+				osd_printf_error("Cannot enumerate displays");
+				return 1;
+			}
+
+			for (int k = 0; k < display_count; k++)
+			{
+				i = displays[k];
+#else
 			for (i = 0; i < SDL_GetNumVideoDisplays(); i++)
 			{
+#endif
 				char temp[64];
 				snprintf(temp, sizeof(temp) - 1, "%s%d", OSDOPTION_SCREEN, i);
 
@@ -170,8 +155,11 @@ protected:
 				// hook us into the list
 				add_monitor(monitor);
 			}
-		}
+
+#if defined(MAME_SDL3)
+			SDL_free(displays);
 #endif
+		}
 
 		osd_printf_verbose("Leave init_monitors\n");
 
