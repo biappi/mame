@@ -2,13 +2,13 @@ name: CI (Windows)
 
 on:
   push:
-    paths:
-    - '.github/workflows/**'
-    - '3rdparty/**'
-    - 'scripts/**'
-    - 'src/**'
-    - 'COPYING'
-    - 'makefile'
+#    paths:
+#    - '.github/workflows/**'
+#    - '3rdparty/**'
+#    - 'scripts/**'
+#    - 'src/**'
+#    - 'COPYING'
+#    - 'makefile'
   pull_request:
     paths:
     - '.github/workflows/**'

@@ -1,14 +1,14 @@
 name: CI (macOS)
 
 on:
-  push:
-    paths:
-    - '.github/workflows/**'
-    - '3rdparty/**'
-    - 'scripts/**'
-    - 'src/**'
-    - 'COPYING'
-    - 'makefile'
+#  push:
+#    paths:
+#    - '.github/workflows/**'
+#    - '3rdparty/**'
+#    - 'scripts/**'
+#    - 'src/**'
+#    - 'COPYING'
+#    - 'makefile'
   pull_request:
     paths:
     - '.github/workflows/**'
