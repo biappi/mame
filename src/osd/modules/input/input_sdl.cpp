@@ -37,11 +37,6 @@
 #define ctouchpad gtouchpad
 #define csensor gsensor
 
-#define SDL_JoystickGUID SDL_GUID
-#define SDL_JoystickGetGUID SDL_GetJoystickGUID
-#define SDL_JoystickGetGUIDString SDL_GUIDToString
-#define SDL_JoystickGetDeviceGUID SDL_GetJoystickGUIDForId
-
 #else
 #include <SDL2/SDL.h>
 #endif
@@ -2550,7 +2545,11 @@ protected:
 		SDL_JoystickGUID guid = SDL_JoystickGetGUID(joy);
 		char guid_str[256];
 		guid_str[0] = '\0';
+#if MAME_SDL3
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
 		char const *const serial = SDL_JoystickGetSerial(joy);
 		std::string id(guid_str);
 		if (serial)
@@ -2599,7 +2598,13 @@ protected:
 	{
 		char guid_str[256];
 		guid_str[0] = '\0';
+
+#if MAME_SDL3
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
+
 		auto target_device = std::find_if(
 				devicelist().begin(),
 				devicelist().end(),
@@ -2647,7 +2652,7 @@ public:
 	virtual void input_init(running_machine &machine) override
 	{
 		auto &sdlopts = dynamic_cast<sdl_options const &>(*options());
-		[[maybe_unused]] bool const sixaxis_mode = sdlopts.sixaxis();
+		bool const sixaxis_mode = sdlopts.sixaxis();
 
 		if (!sdlopts.debug() && sdlopts.background_input())
 			SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -2663,12 +2668,27 @@ public:
 		sdl_joystick_module_base::input_init(machine);
 
 		osd_printf_verbose("Joystick: Start initialization\n");
-#if defined (MAME_SDL3)
-		// #warning TODO: implement this
+
+#if defined(MAME_SDL3)
+		int sticks_count;
+		auto sticks = SDL_GetJoysticks(&sticks_count);
+
+		if (!sticks)
+		{
+			osd_printf_error("Joystick: cannot enumerater devices\n");
+			return;
+		}
+
+		for (int i = 0; i < sticks_count; i++)
+		{
+			create_joystick_device(sticks[i], sixaxis_mode);
+		}
+
+		SDL_free(sticks);
 #else
 		for (int physical_stick = 0; physical_stick < SDL_NumJoysticks(); physical_stick++)
 			create_joystick_device(physical_stick, sixaxis_mode);
-
+#endif
 		constexpr int event_types[] = {
 				int(SDL_JOYAXISMOTION),
 				int(SDL_JOYBALLMOTION),
@@ -2677,8 +2697,8 @@ public:
 				int(SDL_JOYBUTTONUP),
 				int(SDL_JOYDEVICEADDED),
 				int(SDL_JOYDEVICEREMOVED) };
+
 		subscribe(osd(), event_types);
-#endif
 		osd_printf_verbose("Joystick: End initialization\n");
 	}
 
@@ -2741,7 +2761,7 @@ public:
 	virtual void input_init(running_machine &machine) override
 	{
 		auto &sdlopts = dynamic_cast<sdl_options const &>(*options());
-		[[maybe_unused]] bool const sixaxis_mode = sdlopts.sixaxis();
+		bool const sixaxis_mode = sdlopts.sixaxis();
 
 		if (!sdlopts.debug() && sdlopts.background_input())
 			SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -2774,11 +2794,25 @@ public:
 		sdl_joystick_module_base::input_init(machine);
 
 		osd_printf_verbose("Game Controller: Start initialization\n");
+
 #if defined(MAME_SDL3)
-		// #warning TODO: implement this
+		int sticks_count;
+		auto sticks = SDL_GetJoysticks(&sticks_count);
+
+		if (!sticks)
+		{
+			osd_printf_error("Game controller: cannot enumerate devices");
+			return;
+
+		}
+
+		for (int i = 0; i < sticks_count; i++)
+		{
+			auto physical_stick = sticks[i];
 #else
 		for (int physical_stick = 0; physical_stick < SDL_NumJoysticks(); physical_stick++)
 		{
+#endif
 			// try to open as a game controller
 			SDL_GameController *ctrl = nullptr;
 			if (m_initialized_game_controller && SDL_IsGameController(physical_stick))
@@ -2820,9 +2854,12 @@ public:
 			subscribe(osd(), event_types);
 		else
 			subscribe(osd(), joy_event_types);
-#endif
 
 		osd_printf_verbose("Game Controller: End initialization\n");
+
+#if defined(MAME_SDL3)
+		SDL_free(sticks);
+#endif
 	}
 
 	virtual void handle_event(SDL_Event const &event) override
@@ -2831,9 +2868,8 @@ public:
 		{
 		case SDL_JOYDEVICEADDED:
 			{
-#if defined(MAME_SDL3)
-				// #warning TODO: implement this
-#else
+#if !defined(MAME_SDL3) /* maybe not needed? */
+
 				// make sure this isn't an event for a reconnected game controller
 				auto const controller = find_joystick(SDL_JoystickGetDeviceInstanceID(event.jdevice.which));
 				if (find_joystick(SDL_JoystickGetDeviceInstanceID(event.jdevice.which)))
@@ -2844,6 +2880,8 @@ public:
 							controller->id());
 					break;
 				}
+
+#endif
 
 				SDL_Joystick *const joy = SDL_JoystickOpen(event.jdevice.which);
 				if (!joy)
@@ -2868,15 +2906,11 @@ public:
 				{
 					SDL_JoystickClose(joy);
 				}
-#endif
 			}
 			break;
 
 		// for devices supported by the game controller API, this is received before the corresponding SDL_JOYDEVICEADDED
 		case SDL_CONTROLLERDEVICEADDED:
-#if defined(MAME_SDL3)
-				// #warning TODO: implement this
-#else
 			if (m_initialized_game_controller)
 			{
 				SDL_GameController *const ctrl = SDL_GameControllerOpen(event.cdevice.which);
@@ -2886,7 +2920,12 @@ public:
 					break;
 				}
 
+#if defined(MAME_SDL3)
+				auto guid = SDL_GetJoystickGUIDForID(event.cdevice.which);
+#else
 				SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(event.cdevice.which);
+#endif
+
 				char const *const serial = SDL_GameControllerGetSerial(ctrl);
 				auto *const target_device = find_reconnect_match(guid, serial);
 				if (target_device)
@@ -2904,7 +2943,6 @@ public:
 				}
 			}
 			break;
-#endif
 
 		default:
 			dispatch_joystick_event(event);
@@ -2912,17 +2950,22 @@ public:
 	}
 
 private:
-#if defined(MAME_SDL3)
-				// #warning TODO: implement this
-#else
 	sdl_game_controller_device *create_game_controller_device(int index, SDL_GameController *ctrl)
 	{
 		// get basic info
 		char const *const name = SDL_GameControllerName(ctrl);
-		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(index);
+
 		char guid_str[256];
 		guid_str[0] = '\0';
+
+#if defined(MAME_SDL3)
+		auto guid = SDL_GetJoystickGUIDForID(index);
+		SDL_GUIDToString(guid, guid_str, sizeof(guid_str) - 1);
+#else
+		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(index);
 		SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str) - 1);
+#endif
+
 		char const *const serial = SDL_GameControllerGetSerial(ctrl);
 		std::string id(guid_str);
 		if (serial)
@@ -2956,7 +2999,6 @@ private:
 				serial);
 		return &devinfo;
 	}
-#endif
 
 	bool m_initialized_game_controller;
 };
