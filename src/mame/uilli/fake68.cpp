@@ -30,6 +30,8 @@ print d@(d@(d@0 + 0x20) + $03C)
 #include "bus/ata/hdd.h"
 #include "video/pwm.h"
 
+#include "fake68.lh"
+
 #include <stdio.h>
 #include <signal.h>
 
@@ -48,9 +50,15 @@ public:
         , m_maincpu(*this, "maincpu")
         , m_ramdisk(*this, "nvram")
         , m_duart(*this, "duart")
+        , m_duart1(*this, "duart1")
+        , m_duart2(*this, "duart2")
+        , m_duart3(*this, "duart3")
         , m_rs232_a(*this, "rs232_a")
         , m_rs232_b(*this, "rs232_b")
-		, m_ata(*this, "ata")
+        , m_rs232_1(*this, "rs232_1")
+        , m_rs232_2(*this, "rs232_2")
+        , m_rs232_3(*this, "rs232_3")
+        , m_ata(*this, "ata")
         , m_display(*this, "display")
     {
     }
@@ -65,15 +73,20 @@ private:
     required_device<cpu_device> m_maincpu;
     required_device<nvram_device> m_ramdisk;
     required_device<mc68681_device> m_duart;
+    required_device<mc68681_device> m_duart1;
+    required_device<mc68681_device> m_duart2;
+    required_device<mc68681_device> m_duart3;
     required_device<rs232_port_device> m_rs232_a;
     required_device<rs232_port_device> m_rs232_b;
-	required_device<ata_interface_device> m_ata;
+    required_device<rs232_port_device> m_rs232_1;
+    required_device<rs232_port_device> m_rs232_2;
+    required_device<rs232_port_device> m_rs232_3;
+    required_device<ata_interface_device> m_ata;
     required_device<pwm_display_device> m_display;
 
     void main_map(address_map &map);
     void cpu_map(address_map &map);
 
-    void duart_irq_handler(int state);
     void duart_output(uint8_t data);
 
     emu_timer *m_tick_timer;
@@ -84,9 +97,6 @@ private:
 
     uint32_t remap_r(offs_t offset);
     void remap_w(offs_t offset, uint32_t data, uint32_t mem_mask);
-
-    uint8_t mc68681_read(offs_t offset);
-    void mc68681_write(offs_t offset, uint8_t data);
 
     uint32_t timer_on_r(offs_t offset);
     void timer_on_w(offs_t offset, uint32_t data, uint32_t mem_mask);
@@ -106,7 +116,7 @@ private:
     void ramdisk_w(offs_t offset, uint8_t data);
 };
 
-void fake68_state::machine_reset() 
+void fake68_state::machine_reset()
 {
     printf("%s\n", __PRETTY_FUNCTION__);
     // raise(SIGTRAP);
@@ -136,16 +146,6 @@ void fake68_state::machine_start()
     save_pointer(NAME(m_ramdisk_data), RAMDISK_SIZE);
 }
 
-uint8_t fake68_state::mc68681_read(offs_t offset)
-{
-    return m_duart->read(offset >> 1);
-}
-
-void fake68_state::mc68681_write(offs_t offset, uint8_t data)
-{
-    m_duart->write(offset >> 1, data);
-}
-
 void fake68_state::main_map(address_map &map)
 {
     map(0x00000000, 0x00000007).rw(FUNC(fake68_state::bootvect_r), FUNC(fake68_state::bootvect_w));
@@ -156,8 +156,13 @@ void fake68_state::main_map(address_map &map)
     map(0xffff9800, 0xffff9fff).rw(FUNC(fake68_state::timer_on_r), FUNC(fake68_state::timer_on_w));
     map(0xffff9000, 0xffff97ff).rw(FUNC(fake68_state::timer_off_r), FUNC(fake68_state::timer_off_w));
     map(0xffffe000, 0xffffefff).rw(FUNC(fake68_state::cf_r), FUNC(fake68_state::cf_w));
-    map(0xfffff000, 0xffffffff).rw(FUNC(fake68_state::mc68681_read), FUNC(fake68_state::mc68681_write));
+
+    map(0xfffff000, 0xfffff03f).rw(m_duart, FUNC(mc68681_device::read), FUNC(mc68681_device::write)).umask16(0xff00);
+    map(0xfffff040, 0xfffff07f).rw(m_duart1, FUNC(mc68681_device::read), FUNC(mc68681_device::write)).umask16(0xff00);
+    map(0xfffff080, 0xfffff0bf).rw(m_duart2, FUNC(mc68681_device::read), FUNC(mc68681_device::write)).umask16(0xff00);
+    map(0xfffff0c0, 0xfffff0ef).rw(m_duart3, FUNC(mc68681_device::read), FUNC(mc68681_device::write)).umask16(0xff00);
 }
+
 
 void fake68_state::cpu_map(address_map &map)
 {
@@ -179,7 +184,7 @@ uint32_t fake68_state::bootvect_r(offs_t offset)
 
     if (!m_did_bootvect_hack)
         return bootvect_pc[offset];
-     else
+    else
         return m_bootvect_hack[offset];
 }
 
@@ -238,19 +243,6 @@ void fake68_state::cf_w(offs_t offset, uint8_t data)
     m_ata->cs0_w(offset, data, 0xff);
 }
 
-void fake68_state::duart_irq_handler(int state)
-{
-    if (state) {
-        m_maincpu->set_input_line(M68K_IRQ_2, CLEAR_LINE);
-        m_maincpu->set_input_line(M68K_IRQ_1, CLEAR_LINE);
-        m_maincpu->set_input_line(M68K_IRQ_3, ASSERT_LINE);
-    } else {
-        m_maincpu->set_input_line(M68K_IRQ_2, CLEAR_LINE);
-        m_maincpu->set_input_line(M68K_IRQ_1, CLEAR_LINE);
-        m_maincpu->set_input_line(M68K_IRQ_3, CLEAR_LINE);
-    }
-}
-
 void display_7seg(uint8_t segments) {
     char a = (segments & (1 << 0)) ? '-' : ' ';
     char b = (segments & (1 << 1)) ? '|' : ' ';
@@ -295,7 +287,6 @@ static DEVICE_INPUT_DEFAULTS_START(terminal_a)
     DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
 DEVICE_INPUT_DEFAULTS_END
 
-
 static DEVICE_INPUT_DEFAULTS_START(terminal_b)
     DEVICE_INPUT_DEFAULTS( "RS232_TXBAUD", 0xff, RS232_BAUD_19200 )
     DEVICE_INPUT_DEFAULTS( "RS232_RXBAUD", 0xff, RS232_BAUD_19200 )
@@ -304,6 +295,29 @@ static DEVICE_INPUT_DEFAULTS_START(terminal_b)
     DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
 DEVICE_INPUT_DEFAULTS_END
 
+static DEVICE_INPUT_DEFAULTS_START(terminal_1)
+    DEVICE_INPUT_DEFAULTS( "RS232_TXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_RXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_DATABITS", 0xff, RS232_DATABITS_8 )
+    DEVICE_INPUT_DEFAULTS( "RS232_PARITY", 0xff, RS232_PARITY_NONE )
+    DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
+DEVICE_INPUT_DEFAULTS_END
+
+static DEVICE_INPUT_DEFAULTS_START(terminal_2)
+    DEVICE_INPUT_DEFAULTS( "RS232_TXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_RXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_DATABITS", 0xff, RS232_DATABITS_8 )
+    DEVICE_INPUT_DEFAULTS( "RS232_PARITY", 0xff, RS232_PARITY_NONE )
+    DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
+DEVICE_INPUT_DEFAULTS_END
+
+static DEVICE_INPUT_DEFAULTS_START(terminal_3)
+    DEVICE_INPUT_DEFAULTS( "RS232_TXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_RXBAUD", 0xff, RS232_BAUD_19200 )
+    DEVICE_INPUT_DEFAULTS( "RS232_DATABITS", 0xff, RS232_DATABITS_8 )
+    DEVICE_INPUT_DEFAULTS( "RS232_PARITY", 0xff, RS232_PARITY_NONE )
+    DEVICE_INPUT_DEFAULTS( "RS232_STOPBITS", 0xff, RS232_STOPBITS_1 )
+DEVICE_INPUT_DEFAULTS_END
 
 static void cfcard_option(device_slot_interface &device)
 {
@@ -318,27 +332,64 @@ void fake68_state::fake68(machine_config &config)
 
     MC68681(config, m_duart, 8_MHz_XTAL / 2);
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
-    m_duart->irq_cb().set(FUNC(fake68_state::duart_irq_handler));
     m_duart->outport_cb().set(FUNC(fake68_state::duart_output));
+    m_duart->irq_cb().set_inputline(m_maincpu, M68K_IRQ_3);
+
+    MC68681(config, m_duart1, 8_MHz_XTAL / 2);
+    m_duart1->set_clocks(500000, 500000, 1000000, 1000000);
+    m_duart1->irq_cb().set_inputline(m_maincpu, M68K_IRQ_4);
+
+    MC68681(config, m_duart2, 8_MHz_XTAL / 2);
+    m_duart2->set_clocks(500000, 500000, 1000000, 1000000);
+    m_duart2->irq_cb().set_inputline(m_maincpu, M68K_IRQ_5);
+
+    MC68681(config, m_duart3, 8_MHz_XTAL / 2);
+    m_duart3->set_clocks(500000, 500000, 1000000, 1000000);
+    m_duart3->irq_cb().set_inputline(m_maincpu, M68K_IRQ_6);
 
     NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
-    RS232_PORT(config, m_rs232_a, default_rs232_devices, "terminal");
-    m_rs232_a->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_a));
+    /* - */
 
-    m_duart->a_tx_cb().set(m_rs232_a, FUNC(rs232_port_device::write_txd));    
+    RS232_PORT(config, m_rs232_a, default_rs232_devices, "terminal");
+    m_duart->a_tx_cb().set(m_rs232_a, FUNC(rs232_port_device::write_txd));
     m_rs232_a->rxd_handler().set(m_duart, FUNC(mc68681_device::rx_a_w));
 
     RS232_PORT(config, m_rs232_b, default_rs232_devices, "terminal");
+    m_duart->b_tx_cb().set(m_rs232_b, FUNC(rs232_port_device::write_txd));
+    m_rs232_b->rxd_handler().set(m_duart, FUNC(mc68681_device::rx_b_w));
+
+    /* - */
+
+    RS232_PORT(config, m_rs232_1, default_rs232_devices, "terminal");
+    m_duart1->a_tx_cb().set(m_rs232_1, FUNC(rs232_port_device::write_txd));
+    m_rs232_1->rxd_handler().set(m_duart1, FUNC(mc68681_device::rx_a_w));
+
+    RS232_PORT(config, m_rs232_2, default_rs232_devices, "terminal");
+    m_duart2->a_tx_cb().set(m_rs232_2, FUNC(rs232_port_device::write_txd));
+    m_rs232_2->rxd_handler().set(m_duart2, FUNC(mc68681_device::rx_a_w));
+
+    RS232_PORT(config, m_rs232_3, default_rs232_devices, "terminal");
+    m_duart3->a_tx_cb().set(m_rs232_3, FUNC(rs232_port_device::write_txd));
+    m_rs232_3->rxd_handler().set(m_duart3, FUNC(mc68681_device::rx_a_w));
+
+    /* - */
+
+    m_rs232_a->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_a));
     m_rs232_b->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_b));
 
-    m_duart->b_tx_cb().set(m_rs232_b, FUNC(rs232_port_device::write_txd));    
-    m_rs232_b->rxd_handler().set(m_duart, FUNC(mc68681_device::rx_b_w));
+    /* - */
+
+    m_rs232_1->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_1));
+    m_rs232_2->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_2));
+    m_rs232_3->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_3));
 
     ATA_INTERFACE(config, m_ata).options(cfcard_option, "cfcard");
 
     PWM_DISPLAY(config, m_display).set_size(6, 7);
     m_display->set_segmask(0x3f, 0x7f);
+
+    config.set_default_layout(layout_fake68);
 }
 
 
@@ -351,7 +402,7 @@ ROM_START(fake68)
     ROM_REGION32_BE(0xfe000000, "eprom", 0)
     // ROM_LOAD("romboot", 0x000000, 0x000158ac, CRC(3de4486c) SHA1(d7e86da86d1ab5b11eb856113d62c99a5e40d36c))
     // ROM_LOAD("romimage.dev", 0x000000, 0x00061a2e, CRC(0eef4a25) SHA1(0d63281839eac90dd15b107c33443cb05bf84ba0))
-    ROM_LOAD("romimage.dev.patched-debugger", 0x00000000, 0x00070000, CRC(0eef4a25) SHA1(0d63281839eac90dd15b107c33443cb05bf84ba0))
+    ROM_LOAD("romimage.dev.patched-debugger", 0x00000000, 0x00070000, BAD_DUMP CRC(0eef4a25) SHA1(0d63281839eac90dd15b107c33443cb05bf84ba0))
 ROM_END
 
 }
