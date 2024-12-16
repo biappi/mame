@@ -243,27 +243,11 @@ void fake68_state::cf_w(offs_t offset, uint8_t data)
     m_ata->cs0_w(offset, data, 0xff);
 }
 
-void display_7seg(uint8_t segments) {
-    char a = (segments & (1 << 0)) ? '-' : ' ';
-    char b = (segments & (1 << 1)) ? '|' : ' ';
-    char c = (segments & (1 << 2)) ? '|' : ' ';
-    char d = (segments & (1 << 3)) ? '-' : ' ';
-    char e = (segments & (1 << 4)) ? '|' : ' ';
-    char f = (segments & (1 << 5)) ? '|' : ' ';
-    char g = (segments & (1 << 6)) ? '-' : ' ';
-
-    printf(" %c \n", a);
-    printf("%c %c\n", f, b);
-    printf(" %c \n", g);
-    printf("%c %c\n", e, c);
-    printf(" %c \n", d);
-}
-
 void fake68_state::duart_output(uint8_t data)
 {
     printf("%s got %02x %c\n", __PRETTY_FUNCTION__, data, data);
     m_display->write_mx(data);
-    display_7seg(data);
+    m_display->write_my(0x01);
 }
 
 uint8_t fake68_state::ramdisk_r(offs_t offset)
@@ -386,7 +370,7 @@ void fake68_state::fake68(machine_config &config)
 
     ATA_INTERFACE(config, m_ata).options(cfcard_option, "cfcard");
 
-    PWM_DISPLAY(config, m_display).set_size(6, 7);
+    PWM_DISPLAY(config, m_display).set_size(1, 7);
     m_display->set_segmask(0x3f, 0x7f);
 
     config.set_default_layout(layout_fake68);
