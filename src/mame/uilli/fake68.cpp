@@ -90,7 +90,10 @@ private:
     void duart_output(uint8_t data);
 
     emu_timer *m_tick_timer;
+    emu_timer *m_serial_irq_off_timer;
+
     TIMER_CALLBACK_MEMBER(tick_timer);
+    TIMER_CALLBACK_MEMBER(serial_irq_off_timer);
 
     uint32_t bootvect_r(offs_t offset);
     void bootvect_w(offs_t offset, uint32_t data, uint32_t mem_mask);
@@ -128,6 +131,8 @@ void fake68_state::machine_reset()
     m_duart->ip4_w(1);
     m_duart->ip5_w(1);
     m_duart->ip6_w(1);
+
+    m_serial_irq_off_timer->adjust(attotime::never);
 }
 
 void fake68_state::machine_start()
@@ -139,6 +144,8 @@ void fake68_state::machine_start()
     m_tick_timer = timer_alloc(FUNC(fake68_state::tick_timer), this);
     m_tick_timer->adjust(attotime::from_hz(100), 0, attotime::from_hz(100));
     m_tick_timer->enable(false);
+
+    m_serial_irq_off_timer = timer_alloc(FUNC(fake68_state::serial_irq_off_timer), this);
 
     m_ramdisk_data = make_unique_clear<uint8_t[]>(RAMDISK_SIZE);
     m_ramdisk->set_base(&m_ramdisk_data[0], RAMDISK_SIZE);
@@ -245,7 +252,6 @@ void fake68_state::cf_w(offs_t offset, uint8_t data)
 
 void fake68_state::duart_output(uint8_t data)
 {
-    printf("%s got %02x %c\n", __PRETTY_FUNCTION__, data, data);
     m_display->write_mx(data);
     m_display->write_my(0x01);
 }
@@ -376,10 +382,17 @@ void fake68_state::fake68(machine_config &config)
     config.set_default_layout(layout_fake68);
 }
 
-
 TIMER_CALLBACK_MEMBER(fake68_state::tick_timer)
 {
-    m_maincpu->set_input_line(M68K_IRQ_6, ASSERT_LINE);
+    m_maincpu->set_input_line(M68K_IRQ_2, ASSERT_LINE);
+
+    // CB030 does not have a systick timer IRQ acknowledge?!
+    m_serial_irq_off_timer->adjust(attotime::from_nsec(200));
+}
+
+TIMER_CALLBACK_MEMBER(fake68_state::serial_irq_off_timer)
+{
+    m_maincpu->set_input_line(M68K_IRQ_2, CLEAR_LINE);
 }
 
 ROM_START(fake68)
