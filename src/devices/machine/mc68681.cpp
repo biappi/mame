@@ -50,7 +50,7 @@
 
 #include <algorithm>
 
-#define VERBOSE 1
+//#define VERBOSE 1
 //#define LOG_OUTPUT_FUNC printf
 #include "logmacro.h"
 
