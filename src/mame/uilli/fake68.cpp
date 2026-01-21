@@ -404,5 +404,5 @@ ROM_END
 
 }
 
-SYST(2024, fake68, 0, 0, fake68, fake68, fake68_state, empty_init, "Uilli", "Fake 68k machine", MACHINE_IS_SKELETON);
+SYST(2024, fake68, 0, 0, fake68, fake68, fake68_state, empty_init, "Uilli", "Fake 68k machine", 0);
 
