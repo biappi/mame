@@ -114,45 +114,6 @@ void lessfake_state::unk1_w(offs_t offset, uint32_t data, uint32_t mem_mask)
         m_did_bootvect_hack = true;
 }
 
-uint32_t lessfake_state::unk2_r(offs_t offset)
-{
-    if (offset == 0x0000000d >> 3) {
-        static bool hack = true;
-        hack = !hack;
-        if (hack)
-            return 0x01010101;
-        else 
-            return 0;
-    }
-        
-    return 0;
-}
-
-void lessfake_state::unk2_w(offs_t offset, uint32_t data, uint32_t mem_mask)
-{
-    printf("%s write: %08X %08X %08X\n", __PRETTY_FUNCTION__, offset, data, mem_mask);
-}   
-
-
-uint32_t lessfake_state::unk3_r(offs_t offset)
-{
-    if (offset == 0x00000002 >> 3) {
-        static bool hack = true;
-        hack = !hack;
-        if (hack)
-            return 0x04040404;
-        else 
-            return 0;
-    }
-        
-    return 0;
-}
-
-void lessfake_state::unk3_w(offs_t offset, uint32_t data, uint32_t mem_mask)
-{
-    printf("%s write: %08X %08X %08X\n", __PRETTY_FUNCTION__, offset, data, mem_mask);
-}   
-
 
 void lessfake_state::mem_map(address_map &map)
 {
