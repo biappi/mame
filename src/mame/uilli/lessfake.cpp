@@ -43,12 +43,6 @@ private:
     uint32_t unk1_r(offs_t offset);
     void unk1_w(offs_t offset, uint32_t data, uint32_t mem_mask);
     
-    uint32_t unk2_r(offs_t offset);
-    void unk2_w(offs_t offset, uint32_t data, uint32_t mem_mask);
-
-    uint32_t unk3_r(offs_t offset);
-    void unk3_w(offs_t offset, uint32_t data, uint32_t mem_mask);
-
     void mem_map(address_map &map);
 
     u8 ctrl_r(offs_t offset);
