@@ -3,7 +3,6 @@
 #include "cpu/m68000/m68020.h"
 #include "machine/msm6242.h"
 #include "machine/mc68681.h"
-#include "machine/terminal.h"
 #include "bus/rs232/rs232.h"
 
 namespace {
@@ -147,12 +146,12 @@ void lessfake_state::lessfake(machine_config &config)
     M68020(config, m_cpu, 16_MHz_XTAL);
     m_cpu->set_addrmap(AS_PROGRAM, &lessfake_state::mem_map);
     
-	RTC62421(config, "rtc", 32.768_kHz_XTAL);
-    m_rtc->out_int_handler().set_inputline(m_cpu, INPUT_LINE_IRQ0);
+    RTC62421(config, m_rtc, 32.768_kHz_XTAL);
+    // m_rtc->out_int_handler().set_inputline(m_cpu, INPUT_LINE_IRQ6);
 
     MC68681(config, m_duart, 8_MHz_XTAL / 2);
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
-    // m_duart->irq_cb().set_inputline(m_cpu, M68K_IRQ_4);
+    m_duart->irq_cb().set_inputline(m_cpu, M68K_IRQ_5);
 
     RS232_PORT(config, m_rs232_a, default_rs232_devices, "terminal");
     m_duart->a_tx_cb().set(m_rs232_a, FUNC(rs232_port_device::write_txd));
