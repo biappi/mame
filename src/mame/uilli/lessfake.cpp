@@ -3,6 +3,7 @@
 #include "cpu/m68000/m68020.h"
 #include "machine/msm6242.h"
 #include "machine/mc68681.h"
+#include "machine/68230pit.h"
 #include "bus/rs232/rs232.h"
 
 namespace {
@@ -15,6 +16,7 @@ public:
         , m_cpu(*this, "cpu")
         , m_ram(*this, "ram")
         , m_rtc(*this, "rtc")
+        , m_pit(*this, "pit")
         , m_duart(*this, "duart")
         , m_rs232_a(*this, "rs232_a")
         , m_rs232_b(*this, "rs232_b")
@@ -29,6 +31,7 @@ private:
     required_device<m68020_device> m_cpu;
     required_shared_ptr<u32> m_ram;
     required_device<rtc62421_device> m_rtc;
+    required_device<pit68230_device> m_pit;
     required_device<mc68681_device> m_duart;
     required_device<rs232_port_device> m_rs232_a;
     required_device<rs232_port_device> m_rs232_b;
@@ -46,6 +49,14 @@ private:
 
     u8 ctrl_r(offs_t offset);
     void ctrl_w(offs_t offset, u8 data);
+
+    uint8_t pita_r();
+    uint8_t pitb_r();
+    uint8_t pitc_r();
+
+    void pita_w(uint8_t data);
+    void pitb_w(uint8_t data);
+    void pitc_w(uint8_t data);
 };
 
 
@@ -107,6 +118,38 @@ void lessfake_state::unk1_w(offs_t offset, uint32_t data, uint32_t mem_mask)
         m_did_bootvect_hack = true;
 }
 
+uint8_t lessfake_state::pita_r()
+{
+	printf("%s\n", __PRETTY_FUNCTION__);
+	return 0;
+}
+
+uint8_t lessfake_state::pitb_r()
+{
+	printf("%s\n", __PRETTY_FUNCTION__);
+	return 0;
+}
+
+uint8_t lessfake_state::pitc_r()
+{
+	printf("%s\n", __PRETTY_FUNCTION__);
+	return 0;
+}
+
+void lessfake_state::pita_w(uint8_t data)
+{
+    printf("%s %02x\n", __PRETTY_FUNCTION__, data);
+}
+
+void lessfake_state::pitb_w(uint8_t data)
+{
+    printf("%s %02x\n", __PRETTY_FUNCTION__, data);
+}
+
+void lessfake_state::pitc_w(uint8_t data)
+{
+    printf("%s %02x\n", __PRETTY_FUNCTION__, data);
+}
 
 void lessfake_state::mem_map(address_map &map)
 {
@@ -119,6 +162,7 @@ void lessfake_state::mem_map(address_map &map)
     map(0xfff00000, 0xfff7ffff).rom().region("rom", 0);
     map(0xfff80000, 0xfff8003f).rw(m_duart, FUNC(mc68681_device::read), FUNC(mc68681_device::write));
     map(0xfff90000, 0xfff9000f).rw(m_rtc, FUNC(rtc62421_device::read), FUNC(rtc62421_device::write));
+    map(0xfffd0000, 0xfffd003f).rw(m_pit, FUNC(pit68230_device::read), FUNC(pit68230_device::write));
 }
 
 static DEVICE_INPUT_DEFAULTS_START(terminal_a)
@@ -148,6 +192,15 @@ void lessfake_state::lessfake(machine_config &config)
     
     RTC62421(config, m_rtc, 32.768_kHz_XTAL);
     // m_rtc->out_int_handler().set_inputline(m_cpu, INPUT_LINE_IRQ6);
+
+    PIT68230(config, m_pit, 8_MHz_XTAL);
+    m_pit->pa_in_callback().set(FUNC(lessfake_state::pita_r));
+    m_pit->pb_in_callback().set(FUNC(lessfake_state::pitb_r));
+    m_pit->pc_in_callback().set(FUNC(lessfake_state::pitc_r));
+
+    m_pit->pa_out_callback().set(FUNC(lessfake_state::pita_w));
+    m_pit->pb_out_callback().set(FUNC(lessfake_state::pita_w));
+    m_pit->pc_out_callback().set(FUNC(lessfake_state::pita_w));
 
     MC68681(config, m_duart, 8_MHz_XTAL / 2);
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
