@@ -199,8 +199,8 @@ void lessfake_state::lessfake(machine_config &config)
     m_pit->pc_in_callback().set(FUNC(lessfake_state::pitc_r));
 
     m_pit->pa_out_callback().set(FUNC(lessfake_state::pita_w));
-    m_pit->pb_out_callback().set(FUNC(lessfake_state::pita_w));
-    m_pit->pc_out_callback().set(FUNC(lessfake_state::pita_w));
+    m_pit->pb_out_callback().set(FUNC(lessfake_state::pitb_w));
+    m_pit->pc_out_callback().set(FUNC(lessfake_state::pitc_w));
 
     MC68681(config, m_duart, 8_MHz_XTAL / 2);
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
