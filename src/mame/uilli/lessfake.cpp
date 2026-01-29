@@ -183,8 +183,12 @@ void lessfake_state::unk1_w2(offs_t offset, uint32_t data, uint32_t mem_mask)
 
 uint8_t lessfake_state::pita_r()
 {
-	printf("%s -- %02x\n", __PRETTY_FUNCTION__, m_2_to_1);
-	return m_2_to_1;
+    printf("%s -- %02x\n", __PRETTY_FUNCTION__, m_2_to_1);
+    m_pit2->h3_w(1);
+    m_pit->h1_w(1);
+    m_cpu->set_input_line(M68K_IRQ_6, 0);
+
+    return m_2_to_1;
 }
 
 uint8_t lessfake_state::pitb_r()
@@ -214,15 +218,12 @@ void lessfake_state::pitb_w(uint8_t data)
     }
 
     m_1_to_2 = data;
-    // m_pit2->h2_w(1); // blocca il secondo
 
-    // m_pit2->h1_w(1);
-    // m_cpu2->set_input_line(M68K_IRQ_6, 1);
-    // static int x = 1;
+    m_pit2->h1_w(0);
+    m_cpu2->set_input_line(M68K_IRQ_6, 1);
 
-    // m_pit->h3_w(x < 3);
+    m_pit->h3_w(0);
 
-    // x++;
  
     printf("%s %02x\n", __PRETTY_FUNCTION__, data);
 }
@@ -337,7 +338,10 @@ void lessfake_state::lessfake(machine_config &config)
 
     PIT68230(config, m_pit2, 8_MHz_XTAL);
     m_pit2->pa_in_callback().set([this] () {
-        printf("pa2 read %08x\n", m_1_to_2); 
+        printf("pa2 read %02x\n", m_1_to_2); 
+        m_pit->h3_w(1);
+        m_pit2->h1_w(1);
+        m_cpu2->set_input_line(M68K_IRQ_6, 0);
         return m_1_to_2; 
     });
     m_pit2->pb_in_callback().set([] () { printf("pb2 read\n"); return 0; });
@@ -348,6 +352,12 @@ void lessfake_state::lessfake(machine_config &config)
         static bool first = true;
         if (first) { first = false ; return; }
         // m_pit->h2_w(1);
+
+        m_pit->h1_w(0);
+        m_cpu->set_input_line(M68K_IRQ_6, 1);
+
+        m_pit2->h3_w(0);
+
         m_2_to_1 = x; 
         printf("pb2 out %x\n", x);
     });
