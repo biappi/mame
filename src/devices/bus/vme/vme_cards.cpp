@@ -18,6 +18,7 @@
 #include "mvme350.h"
 #include "mzr8105.h"
 #include "mzr8300.h"
+#include "pme6822.h"
 #include "smvme2000.h"
 #include "sys68k_cpu1.h"
 #include "sys68k_cpu20.h"
@@ -47,6 +48,7 @@ void vme_cards(device_slot_interface &device)
 	device.option_add("mvme350",          VME_MVME350);
 	device.option_add("mzr8105",          VME_MZR8105);
 	device.option_add("mzr8300",          VME_MZR8300);
+	device.option_add("pme6822",          VME_PME6822);
 	device.option_add("smvme2000",        VME_SMVME2000);
 	device.option_add("sys68k_cpu1",      VME_SYS68K_CPU1);
 	device.option_add("sys68k_cpu20",     VME_SYS68K_CPU20);

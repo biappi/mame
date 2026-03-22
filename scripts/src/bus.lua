@@ -6135,6 +6135,8 @@ if BUSES["VME"] then
 		MAME_DIR .. "src/devices/bus/vme/mzr8105.h",
 		MAME_DIR .. "src/devices/bus/vme/mzr8300.cpp",
 		MAME_DIR .. "src/devices/bus/vme/mzr8300.h",
+		MAME_DIR .. "src/devices/bus/vme/pme6822.cpp",
+		MAME_DIR .. "src/devices/bus/vme/pme6822.h",
 		MAME_DIR .. "src/devices/bus/vme/smvme2000.cpp",
 		MAME_DIR .. "src/devices/bus/vme/smvme2000.h",
 		MAME_DIR .. "src/devices/bus/vme/sys68k_cpu1.cpp",

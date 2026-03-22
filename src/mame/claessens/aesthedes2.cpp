@@ -1,6 +1,7 @@
 #include "emu.h"
 
-
+#include "bus/vme/vme.h"
+#include "bus/vme/vme_cards.h"
 
 namespace {
 
@@ -14,6 +15,8 @@ public:
 
     void aesthedes2(machine_config &config)
     {
+        VME(config, "crate5");
+        VME_SLOT(config, "crate5:04", vme_cards, "pme6822");
     }
 
 };
