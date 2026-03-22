@@ -9,6 +9,7 @@
 #include "emu.h"
 
 #include "bus/vme/vme.h"
+#include "cpu/m68000/m68020.h"
 
 DECLARE_DEVICE_TYPE(VME_PME6822, vme_pme6822_card_device)
 
@@ -20,6 +21,12 @@ public:
 protected:
     // device_t overrides
     virtual void device_start() override ATTR_COLD;
+
+	// optional information overrides
+	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+
+private:
+	required_device<m68000_musashi_device> m_maincpu;
 };
 
 #endif // MAME_BUS_VME_PME6822_H
