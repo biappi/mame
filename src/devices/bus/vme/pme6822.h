@@ -27,6 +27,8 @@ protected:
 
 private:
 	required_device<m68000_musashi_device> m_maincpu;
+
+    void main_map(address_map &map) ATTR_COLD;
 };
 
 #endif // MAME_BUS_VME_PME6822_H

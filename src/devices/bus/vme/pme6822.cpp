@@ -24,6 +24,19 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
 void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
 {
 	M68020(config, m_maincpu, 16670000);
+    m_maincpu->set_addrmap(AS_PROGRAM, &vme_pme6822_card_device::main_map);
+}
+
+void vme_pme6822_card_device::main_map(address_map &map)
+{
+    // 8MB RAM, according to system info printed by the "mfree" command
+    map(0x00000000, 0x007fffff).ram();
+
+    // 64KB for OS-9 kernel ROM
+    map(0xf0000000, 0xf000ffff).rom().region("eprom0", 0);
+
+    // 8KB for AE_CONFIG module
+    map(0xf0010000, 0xf0011fff).rom().region("eprom1", 0);
 }
 
 void vme_pme6822_card_device::device_start()
