@@ -22,13 +22,6 @@ public:
                 downcast<vme_pme6822_card_device &>(*dev).set_eprom_regions(":os9kernel", ":ae_config_504");
             });
         }, "pme6822", true);
-        
-        VME(config, "crate3");
-        VME_SLOT(config, "crate3:02", [](device_slot_interface &device) {
-            device.option_add("pme6822", VME_PME6822).machine_config([](device_t *dev) {
-                downcast<vme_pme6822_card_device &>(*dev).set_eprom_regions(":os9kernel", ":ae_config_302");
-            });
-        }, "pme6822", true);
     }
 
 };
