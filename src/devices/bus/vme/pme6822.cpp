@@ -37,14 +37,14 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
 
 void vme_pme6822_card_device::main_map(address_map &map)
 {
-    // 8MB RAM, according to system info printed by the "mfree" command
-    map(0x00000000, 0x007fffff).ram();
-
     // 64KB for OS-9 kernel ROM
-    map(0xf0000000, 0xf000ffff).rom().region(m_eprom0_region, 0);
+    map(0x00000000, 0x0000ffff).rom().region(m_eprom0_region, 0);
 
     // 8KB for AE_CONFIG module
-    map(0xf0010000, 0xf0011fff).rom().region(m_eprom1_region, 0);
+    map(0x00010000, 0x00011fff).rom().region(m_eprom1_region, 0);
+
+    // 8MB RAM, according to system info printed by the "mfree" command
+    map(0x08000000, 0x087fffff).ram();
 }
 
 void vme_pme6822_card_device::device_start()
