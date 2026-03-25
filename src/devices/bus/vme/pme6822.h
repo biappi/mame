@@ -18,6 +18,8 @@ class vme_pme6822_card_device : public device_t, public device_vme_card_interfac
 public:
     vme_pme6822_card_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
+    void set_eprom_regions(const char *eprom0, const char *eprom1);
+
 protected:
     // device_t overrides
     virtual void device_start() override ATTR_COLD;
@@ -27,6 +29,9 @@ protected:
 
 private:
 	required_device<m68000_musashi_device> m_maincpu;
+
+    const char *m_eprom0_region;
+    const char *m_eprom1_region;
 
     void main_map(address_map &map) ATTR_COLD;
 };

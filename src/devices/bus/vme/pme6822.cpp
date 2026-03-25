@@ -18,7 +18,15 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     : device_t(mconfig, VME_PME6822, tag, owner, clock)
     , device_vme_card_interface(mconfig, *this)
     , m_maincpu(*this, "maincpu")
+    , m_eprom0_region("eprom0")
+    , m_eprom1_region("eprom1")
 {
+}
+
+void vme_pme6822_card_device::set_eprom_regions(const char *eprom0, const char *eprom1)
+{
+    m_eprom0_region = eprom0;
+    m_eprom1_region = eprom1;
 }
 
 void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
@@ -33,10 +41,10 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00000000, 0x007fffff).ram();
 
     // 64KB for OS-9 kernel ROM
-    map(0xf0000000, 0xf000ffff).rom().region("eprom0", 0);
+    map(0xf0000000, 0xf000ffff).rom().region(m_eprom0_region, 0);
 
     // 8KB for AE_CONFIG module
-    map(0xf0010000, 0xf0011fff).rom().region("eprom1", 0);
+    map(0xf0010000, 0xf0011fff).rom().region(m_eprom1_region, 0);
 }
 
 void vme_pme6822_card_device::device_start()
