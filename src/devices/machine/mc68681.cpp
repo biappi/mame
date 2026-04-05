@@ -588,16 +588,16 @@ uint8_t mcf5206e_uart_device::read(offs_t offset)
 		break;
 
 	case 0x06: /* UBG Baud Generator Prescale MSB */
-	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
+	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
 		r = (UBG & 0xFF00) >> 8;
 		break;
 	case 0x07: /* UBG Baud Generator Prescale LSB */
-	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
+	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
 		r = (UBG & 0x00FF);
 		break;
 
 	case 0x0c:  /* UIVR */
-	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
+	LOG("%s: Reading mcf5206e (%s) reg %x (%s)\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_read_names[offset]);
 		r = IVR;
 		break;
 
@@ -679,7 +679,7 @@ uint8_t duart_base_device::read(offs_t offset)
 
 	offset &= 0xf;
 
-	LOG("%s: Reading 68681 (%s) reg %x (%s)\n", this->machine().describe_context(), tag(), offset, duart68681_reg_read_names[offset]);
+	LOG("%s: Reading 68681 (%s) reg %x (%s)\n", this->machine().describe_context().c_str(), tag(), offset, duart68681_reg_read_names[offset]);
 
 	switch (offset)
 	{
@@ -800,18 +800,18 @@ void mcf5206e_uart_device::write(offs_t offset, uint8_t data)
 		break;
 
 	case 0x06: /* UBG1 */
-	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
+	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
 		UBG = (UBG & 0x00ff) | (data << 8);
 		break;
 	case 0x07: /* UBG2 */
-	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
+	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
 		UBG = (UBG & 0xff00) | data;
 		m_chanA->baud_updated();
 		m_chanA->update_interrupts();
 		break;
 
 	case 0x0c: /* UIVR */
-	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
+	LOG("%s: Writing mcf5206e (%s) reg %x (%s) with %02x\n", this->machine().describe_context().c_str(), tag(), offset, mcf5206e_duart_reg_write_names[offset], data);
 		IVR = data;
 		break;
 
@@ -947,7 +947,7 @@ void xr68c681_device::write(offs_t offset, uint8_t data)
 void duart_base_device::write(offs_t offset, uint8_t data)
 {
 	offset &= 0x0f;
-	LOG("%s: Writing 68681 (%s) reg %x (%s) with %02x\n", this->machine().describe_context(), tag(), offset, duart68681_reg_write_names[offset], data);
+	LOG("%s: Writing 68681 (%s) reg %x (%s) with %02x\n", this->machine().describe_context().c_str(), tag(), offset, duart68681_reg_write_names[offset], data);
 	switch (offset)
 	{
 	case 0x00: /* MRA */
