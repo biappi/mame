@@ -10,6 +10,7 @@
 
 #include "bus/vme/vme.h"
 #include "cpu/m68000/m68020.h"
+#include "machine/mc68681.h"
 
 DECLARE_DEVICE_TYPE(VME_PME6822, vme_pme6822_card_device)
 
@@ -29,11 +30,14 @@ protected:
 
 private:
 	required_device<m68000_musashi_device> m_maincpu;
+    required_device<mc68681_device> m_duart;
 
     const char *m_eprom0_region;
     const char *m_eprom1_region;
 
     void main_map(address_map &map) ATTR_COLD;
+
+    void duart_output(uint8_t data);
 };
 
 #endif // MAME_BUS_VME_PME6822_H
