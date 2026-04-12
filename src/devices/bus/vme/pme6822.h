@@ -21,6 +21,8 @@ public:
 
     void set_eprom_regions(const char *eprom0, const char *eprom1);
 
+    auto rs232_tx_cb() { return m_duart_a_tx.bind(); }
+    
 protected:
     // device_t overrides
     virtual void device_start() override ATTR_COLD;
@@ -32,12 +34,15 @@ private:
 	required_device<m68000_musashi_device> m_maincpu;
     required_device<mc68681_device> m_duart;
 
+    devcb_write_line m_duart_a_tx;
+
     const char *m_eprom0_region;
     const char *m_eprom1_region;
 
     void main_map(address_map &map) ATTR_COLD;
 
     void duart_output(uint8_t data);
+    void duart_a_tx(int state);
 };
 
 #endif // MAME_BUS_VME_PME6822_H

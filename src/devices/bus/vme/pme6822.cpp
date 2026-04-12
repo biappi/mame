@@ -19,6 +19,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , device_vme_card_interface(mconfig, *this)
     , m_maincpu(*this, "maincpu")
     , m_duart(*this, "duart")
+    , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
 {
@@ -39,6 +40,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
     m_duart->irq_cb().set_inputline(m_maincpu, M68K_IRQ_5);
     m_duart->outport_cb().set(FUNC(vme_pme6822_card_device::duart_output));
+    m_duart->a_tx_cb().set(FUNC(vme_pme6822_card_device::duart_a_tx));
 }
 
 void vme_pme6822_card_device::main_map(address_map &map)
@@ -64,4 +66,9 @@ void vme_pme6822_card_device::device_start()
 void vme_pme6822_card_device::duart_output(uint8_t data)
 {
     LOG("DUART_OUTPUT: %02X '%c'\n", data, data);
+}
+
+void vme_pme6822_card_device::duart_a_tx(int state)
+{
+    m_duart_a_tx(state);
 }
