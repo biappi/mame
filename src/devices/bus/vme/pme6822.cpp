@@ -49,10 +49,14 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00000000, 0x0000ffff).rom().region(m_eprom0_region, 0);
 
     // 8KB for AE_CONFIG module
-    map(0x00010000, 0x00011fff).rom().region(m_eprom1_region, 0);
+    // Location is determined by how the bootloader reads memory
+    map(0x02000000, 0x02001fff).rom().region(m_eprom1_region, 0);
 
     // 8MB RAM, according to system info printed by the "mfree" command
     map(0x08000000, 0x087fffff).ram();
+
+    // more alleged RAM accessed by the ROM code
+    map(0x02200000, 0x029fffff).ram();
 
     // MC2681P DUART
     map(0x00060000, 0x0006001f).rw(m_duart, FUNC(mc68681_device::read), FUNC(mc68681_device::write));
