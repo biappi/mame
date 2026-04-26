@@ -19,6 +19,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , device_vme_card_interface(mconfig, *this)
     , m_maincpu(*this, "maincpu")
     , m_duart(*this, "duart")
+    , m_rtc(*this, "rtc")
     , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
@@ -41,6 +42,8 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
     m_duart->irq_cb().set_inputline(m_maincpu, M68K_IRQ_5);
     m_duart->outport_cb().set(FUNC(vme_pme6822_card_device::duart_output));
     m_duart->a_tx_cb().set(FUNC(vme_pme6822_card_device::duart_a_tx));
+
+    DS1216E(config, m_rtc);
 }
 
 void vme_pme6822_card_device::main_map(address_map &map)
@@ -49,8 +52,7 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00000000, 0x0000ffff).rom().region(m_eprom0_region, 0);
 
     // 8KB for AE_CONFIG module
-    // Location is determined by how the bootloader reads memory
-    map(0x02000000, 0x02001fff).rom().region(m_eprom1_region, 0);
+    map(0x00040000, 0x00041fff).rom().region(m_eprom1_region, 0);
 
     // 8MB RAM, according to system info printed by the "mfree" command
     map(0x08000000, 0x087fffff).ram();
@@ -65,6 +67,19 @@ void vme_pme6822_card_device::main_map(address_map &map)
 void vme_pme6822_card_device::device_start()
 {
 	LOG("%s\n", FUNCNAME);
+
+    // memory tap offers a tidy solution for the "phantom" rtc
+	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
+		[this](offs_t offset, u32 &data, u32 mem_mask)
+		{
+			if (ACCESSING_BITS_24_31)
+			{
+				if (m_rtc->ceo_r())
+					data = (data & 0x00ffffffU) | u32(m_rtc->read(offset >> 2)) << 24;
+				else
+					m_rtc->read(offset >> 2);
+			}
+		});
 }
 
 void vme_pme6822_card_device::duart_output(uint8_t data)

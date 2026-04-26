@@ -11,6 +11,7 @@
 #include "bus/vme/vme.h"
 #include "cpu/m68000/m68020.h"
 #include "machine/mc68681.h"
+#include "machine/ds1215.h"
 
 DECLARE_DEVICE_TYPE(VME_PME6822, vme_pme6822_card_device)
 
@@ -33,6 +34,7 @@ protected:
 private:
 	required_device<m68000_musashi_device> m_maincpu;
     required_device<mc68681_device> m_duart;
+	required_device<ds1216e_device> m_rtc;
 
     devcb_write_line m_duart_a_tx;
 
