@@ -83,6 +83,11 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00000000, 0x0000ffff).rom().region(m_eprom0_region, 0);
 
     // 8KB for AE_CONFIG module
+    // The starting location is guessed by the fact that the Aesthedes 2 firmware
+    // (bootloader and sysgo module) reads at 0x41ffc, where the DS1216 RTC responds.
+    // This requires some ROM to reside there. 0x41ffc = 0x40000 (a nice power of 2
+    // to map different peripherals, e.g. DUART @ 0x60000) + 0x1ffc (just short of 8KB, the
+    // size of the AE_CONFIG EPROM).
     map(0x00040000, 0x00041fff).rom().region(m_eprom1_region, 0);
 
     // 8MB RAM, according to system info printed by the "mfree" command
