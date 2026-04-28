@@ -3,6 +3,8 @@
 #include "emu.h"
 #include "pme6822.h"
 
+#include "bus/nscsi/hd.h"
+
 #ifdef _MSC_VER
 #define FUNCNAME __func__
 #else
@@ -14,12 +16,22 @@
 
 DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radstone PME 68-22")
 
+namespace {
+
+static void scsi_devices(device_slot_interface &device)
+{
+	device.option_add("harddisk", NSCSI_HARDDISK);
+}
+
+} // anonymous namespace
+
 vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
     : device_t(mconfig, VME_PME6822, tag, owner, clock)
     , device_vme_card_interface(mconfig, *this)
     , m_maincpu(*this, "maincpu")
     , m_duart(*this, "duart")
     , m_rtc(*this, "rtc")
+    , m_ncr(*this, "scsi:7:ncr5385")
     , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
@@ -44,6 +56,21 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
     m_duart->a_tx_cb().set(FUNC(vme_pme6822_card_device::duart_a_tx));
 
     DS1216E(config, m_rtc);
+
+    NSCSI_BUS(config, "scsi");
+    NSCSI_CONNECTOR(config, "scsi:0", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:1", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:2", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:3", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:4", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:5", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:6", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:7").option_set("ncr5385", NCR5385).clock(10'000'000).machine_config(
+        [this](device_t *device)
+        {
+            ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
+            adapter.irq().set_inputline(m_maincpu, M68K_IRQ_2);
+        });
 }
 
 void vme_pme6822_card_device::main_map(address_map &map)
@@ -62,6 +89,9 @@ void vme_pme6822_card_device::main_map(address_map &map)
 
     // MC2681P DUART
     map(0x00060000, 0x0006001f).rw(m_duart, FUNC(mc68681_device::read), FUNC(mc68681_device::write));
+
+    // NCR 5385 SCSI (register file @ byte offsets 0x0-0xf; OS-9 touches e.g. 0x00020009)
+    map(0x00020000, 0x0002000f).m(m_ncr, FUNC(ncr5385_device::map));
 }
 
 void vme_pme6822_card_device::device_start()
