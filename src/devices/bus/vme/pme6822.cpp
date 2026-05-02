@@ -102,6 +102,49 @@ void vme_pme6822_card_device::device_start()
 {
 	LOG("%s\n", FUNCNAME);
 
+	save_item(NAME(m_ncr5385_irq_prev));
+
+	address_space &program = m_maincpu->space(AS_PROGRAM);
+	constexpr offs_t ncr_base = 0x00020000;
+	// Passthrough taps: read runs after the mapped handler (patch `data` here to fake reads);
+	// write runs before the mapped handler (patch `data` here to override writes).
+	program.install_read_tap(ncr_base, ncr_base + 0x0f, "ncr5385_r",
+		[this](offs_t offset, u32 &data, u32 mem_mask)
+		{
+            
+			// if (ACCESSING_BITS_24_31)
+			//	LOG("1 NCR read [%01x] -> %02x (%s)\n", int((offset + 0 - ncr_base) & 0xf), u8(data >> 24), machine().describe_context());
+			if (ACCESSING_BITS_16_23) {
+				LOG("2 NCR read [%01x] -> %02x (%s)\n", int((offset + 1 - ncr_base) & 0xf), u8(data >> 16), machine().describe_context());
+                if (offset + 1 - ncr_base == 5) {
+
+                    LOG("patching NCR read [%01x] -> %02x (%s)\n", int((offset + 1 - ncr_base) & 0xf), u8(data >> 16), machine().describe_context());
+                    uint8_t reg4 = (data & 0xff000000u) >> 24;
+                    uint8_t reg4_bit_5 = reg4 & 0x00000020u;
+                    uint8_t reg5 = (data & 0x00ff0000u) >> 16;
+                    uint8_t reg5_new = (reg5 & ~0x20u) | reg4_bit_5;
+
+                    data = (data & ~0x00ff0000U) | (reg5_new << 16);
+                }
+            }
+			// if (ACCESSING_BITS_8_15)
+			// 	LOG("3 NCR read [%01x] -> %02x (%s)\n", int((offset + 2 - ncr_base) & 0xf), u8(data >> 8), machine().describe_context());
+			// if (ACCESSING_BITS_0_7)
+			// 	LOG("4 NCR read [%01x] -> %02x (%s)\n", int((offset + 3 - ncr_base) & 0xf), u8(data >> 0), machine().describe_context());
+		});
+	program.install_write_tap(ncr_base, ncr_base + 0x0f, "ncr5385_w",
+		[this](offs_t offset, u32 &data, u32 mem_mask)
+		{
+			if (ACCESSING_BITS_24_31)
+				LOG("NCR write [%01x] <- %02x (%s)\n", int((offset + 0 - ncr_base) & 0xf), u8(data >> 24), machine().describe_context());
+			if (ACCESSING_BITS_16_23)
+				LOG("NCR write [%01x] <- %02x (%s)\n", int((offset + 1 - ncr_base) & 0xf), u8(data >> 16), machine().describe_context());
+			if (ACCESSING_BITS_8_15)
+				LOG("NCR write [%01x] <- %02x (%s)\n", int((offset + 2 - ncr_base) & 0xf), u8(data >> 8), machine().describe_context());
+			if (ACCESSING_BITS_0_7)
+				LOG("NCR write [%01x] <- %02x (%s)\n", int((offset + 3 - ncr_base) & 0xf), u8(data >> 0), machine().describe_context());
+		});
+
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
 		[this](offs_t offset, u32 &data, u32 mem_mask)
