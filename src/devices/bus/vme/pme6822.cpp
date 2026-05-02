@@ -35,6 +35,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
+    , m_ncr5385_irq_prev(-1)
 {
 }
 
@@ -69,8 +70,11 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
         [this](device_t *device)
         {
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
-            adapter.irq().set_inputline(m_maincpu, M68K_IRQ_2);
+            // adapter.irq().set_inputline(m_maincpu, M68K_IRQ_5);
+            adapter.irq().set(*this, FUNC(vme_pme6822_card_device::ncr5385_irq_w));
+            // adapter.set_own_id(2);
         });
+
 }
 
 void vme_pme6822_card_device::main_map(address_map &map)
@@ -110,6 +114,20 @@ void vme_pme6822_card_device::device_start()
 					m_rtc->read(offset >> 2);
 			}
 		});
+}
+
+void vme_pme6822_card_device::ncr5385_irq_w(int state)
+{
+    if (state != m_ncr5385_irq_prev)
+    {
+        if (m_ncr5385_irq_prev >= 0)
+            LOG("NCR5385 IRQ line %d -> %d @ %s\n", m_ncr5385_irq_prev, state, machine().time().to_string());
+        else
+            LOG("NCR5385 IRQ line (initial) -> %d @ %s\n", state, machine().time().to_string());
+        m_ncr5385_irq_prev = state;
+    }
+
+    m_maincpu->set_input_line(M68K_IRQ_3, state);
 }
 
 void vme_pme6822_card_device::duart_output(uint8_t data)

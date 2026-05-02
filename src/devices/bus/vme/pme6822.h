@@ -46,8 +46,12 @@ private:
 
     void main_map(address_map &map) ATTR_COLD;
 
+    void ncr5385_irq_w(int state);
+
     void duart_output(uint8_t data);
     void duart_a_tx(int state);
+
+    int m_ncr5385_irq_prev;
 };
 
 #endif // MAME_BUS_VME_PME6822_H
