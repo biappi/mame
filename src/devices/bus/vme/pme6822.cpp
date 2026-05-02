@@ -129,8 +129,6 @@ void vme_pme6822_card_device::device_start()
                     uint8_t reg5 = (data & 0x00ff0000u) >> 16;
                     uint8_t reg5_new = (reg5 & ~0x20u) | reg4_bit_5;
 
-                    reg5_new = 0xff;
-
                     data = (data & ~0x00ff0000U) | (reg5_new << 16);
                 }
             }
