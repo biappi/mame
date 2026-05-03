@@ -23,7 +23,7 @@
 #define LOG_DMA      (1U << 4)
 #define LOG_COMMAND  (1U << 5)
 
-//#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_STATE|LOG_DMA|LOG_COMMAND)
+#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_STATE|LOG_DMA|LOG_COMMAND)
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(NCR5385, ncr5385_device, "ncr5385", "NCR 5385 SCSI Protocol Controller")
@@ -490,6 +490,32 @@ void ncr5385_device::state_timer(s32 param)
 		m_state_timer->adjust(attotime::from_nsec(delay));
 }
 
+static char const *state_name(u32 state)
+{
+	switch (state)
+	{
+	case IDLE:           return "IDLE";
+	case DIAGNOSTIC:     return "DIAGNOSTIC";
+	case ARB_BUS_FREE:   return "ARB_BUS_FREE";
+	case ARB_START:      return "ARB_START";
+	case ARB_EVALUATE:   return "ARB_EVALUATE";
+	case SEL_START:      return "SEL_START";
+	case SEL_DELAY:      return "SEL_DELAY";
+	case SEL_WAIT_BSY:   return "SEL_WAIT_BSY";
+	case SEL_COMPLETE:   return "SEL_COMPLETE";
+	case SEL_WAIT_REQ:   return "SEL_WAIT_REQ";
+	case XFI_START:      return "XFI_START";
+	case XFI_IN_REQ:     return "XFI_IN_REQ";
+	case XFI_IN_DRQ:     return "XFI_IN_DRQ";
+	case XFI_IN_ACK:     return "XFI_IN_ACK";
+	case XFI_OUT_REQ:    return "XFI_OUT_REQ";
+	case XFI_OUT_DRQ:    return "XFI_OUT_DRQ";
+	case XFI_OUT_ACK:    return "XFI_OUT_ACK";
+	case XFI_OUT_PAD:    return "XFI_OUT_PAD";
+	default:            return "???";
+	}
+}
+
 int ncr5385_device::state_step()
 {
 	u32 const ctrl = scsi_bus->ctrl_r();
@@ -498,6 +524,7 @@ int ncr5385_device::state_step()
 	u8 const oid = 1 << m_own_id;
 	u8 const tid = 1 << m_dst_id;
 
+	const auto old_state = m_state;
 	switch (m_state)
 	{
 	case DIAGNOSTIC:
@@ -781,6 +808,10 @@ int ncr5385_device::state_step()
 			}
 		}
 		break;
+	}
+
+	if( old_state != m_state ) {
+		LOGMASKED(LOG_STATE, "state_step: %s -> %s\n", state_name(old_state), state_name(m_state));	
 	}
 
 	return delay;
