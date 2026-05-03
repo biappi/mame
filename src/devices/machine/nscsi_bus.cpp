@@ -14,8 +14,8 @@
 #define LOG_DATA        (1U << 4)
 #define LOG_DATA_SENT   (1U << 5)
 
-#define VERBOSE (LOG_UNSUPPORTED)
-//#define LOG_OUTPUT_FUNC osd_printf_info
+#define VERBOSE (LOG_UNSUPPORTED | LOG_CONTROL | LOG_STATE | LOG_DATA | LOG_DATA_SENT)
+#define LOG_OUTPUT_FUNC logerror
 
 
 
@@ -113,11 +113,23 @@ uint32_t nscsi_bus_device::data_r() const
 
 uint32_t nscsi_bus_device::ctrl_r() const
 {
+	LOGMASKED(LOG_CONTROL, "ctrl_r %02x %c%c%c%c%c%c%c%c%c\n",
+				ctrl,
+				ctrl & nscsi_device::S_RST ? 'R' : '.',
+				ctrl & nscsi_device::S_ATN ? 'A' : '.',
+				ctrl & nscsi_device::S_ACK ? 'K' : '.',
+				ctrl & nscsi_device::S_REQ ? 'Q' : '.',
+				ctrl & nscsi_device::S_SEL ? 'S' : '.',
+				ctrl & nscsi_device::S_BSY ? 'B' : '.',
+				ctrl & nscsi_device::S_MSG ? 'M' : '.',
+				ctrl & nscsi_device::S_CTL ? 'C' : '.',
+				ctrl & nscsi_device::S_INP ? 'I' : '.');
 	return ctrl;
 }
 
 void nscsi_bus_device::ctrl_w(int refid, uint32_t lines, uint32_t mask)
 {
+	LOGMASKED(LOG_CONTROL, "ctrl_w %d %02x & %02x\n", refid, lines, mask);
 	uint32_t c = dev[refid].ctrl;
 	dev[refid].ctrl = (c & ~mask) | (lines & mask);
 	regen_ctrl(refid);
