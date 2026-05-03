@@ -101,6 +101,7 @@ void vme_pme6822_card_device::main_map(address_map &map)
 
     // NCR 5385 SCSI (register file @ byte offsets 0x0-0xf; OS-9 touches e.g. 0x00020009)
     map(0x00020000, 0x0002000f).m(m_ncr, FUNC(ncr5385_device::map));
+    map(0x00020005, 0x00020005).r(FUNC(vme_pme6822_card_device::ncr5385_reg5));
 }
 
 void vme_pme6822_card_device::device_start()
@@ -143,4 +144,17 @@ void vme_pme6822_card_device::duart_output(uint8_t data)
 void vme_pme6822_card_device::duart_a_tx(int state)
 {
     m_duart_a_tx(state);
+}
+
+uint8_t vme_pme6822_card_device::ncr5385_reg5(address_space &space)
+{
+    // Need to fiddle with register 5 because SCSILIB (the NCR5385 driver used by OS-9) polls bit 5
+    // of that register instead of the "function complete" bit in register 6.
+
+    uint8_t reg6 = space.read_byte(0x00020006);
+    uint8_t function_complete = (reg6 & 0x01) ? 1 : 0;
+    uint8_t reg5 = (function_complete << 5);
+    
+    LOG("NCR5385 reg 5 patch (r6: %02X -> r5: %02X) @ %s\n", reg6, reg5, machine().time().to_string());
+    return reg5;
 }

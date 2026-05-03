@@ -52,6 +52,7 @@ private:
     void duart_a_tx(int state);
 
     int m_ncr5385_irq_prev;
+    uint8_t ncr5385_reg5(address_space &space) ATTR_COLD;
 };
 
 #endif // MAME_BUS_VME_PME6822_H
