@@ -57,6 +57,8 @@ public:
 	u8 dma_r();
 	void dma_w(u8 data);
 
+	u8 peek_int_status() const { return m_int_status; }
+
 protected:
 	// device_t implementation
 	virtual void device_start() override ATTR_COLD;

@@ -151,10 +151,10 @@ uint8_t vme_pme6822_card_device::ncr5385_reg5(address_space &space)
     // Need to fiddle with register 5 because SCSILIB (the NCR5385 driver used by OS-9) polls bit 5
     // of that register instead of the "function complete" bit in register 6.
 
-    uint8_t reg6 = space.read_byte(0x00020006);
-    uint8_t function_complete = (reg6 & 0x01) ? 1 : 0;
+    // uint8_t reg6 = space.read_byte(0x00020006);
+    uint8_t function_complete = m_ncr->peek_int_status() != 0;
     uint8_t reg5 = (function_complete << 5);
     
-    LOG("NCR5385 reg 5 patch (r6: %02X -> r5: %02X) @ %s\n", reg6, reg5, machine().time().to_string());
+    LOG("NCR5385 reg 5 patch (r5: %02X) @ %s\n", reg5, machine().time().to_string());
     return reg5;
 }
