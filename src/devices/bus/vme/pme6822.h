@@ -44,7 +44,14 @@ private:
     const char *m_eprom0_region;
     const char *m_eprom1_region;
 
+    uint8_t m_ncr_reg6_cache;
+    bool m_ncr_reg6_cache_valid;
+
     void main_map(address_map &map) ATTR_COLD;
+
+    u8 ncr_port_r(offs_t offset);
+    void ncr_port_w(offs_t offset, u8 data);
+    void ncr_irq_w(int state);
 
     void duart_output(uint8_t data);
     void duart_a_tx(int state);

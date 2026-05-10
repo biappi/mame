@@ -208,6 +208,43 @@ void ncr5385_device::map(address_map &map)
 	map(0xf, 0xf).rw(FUNC(ncr5385_device::tst_r), FUNC(ncr5385_device::tst_w));
 }
 
+u8 ncr5385_device::reg_r(offs_t offset)
+{
+	switch (offset)
+	{
+	case 0: return dat_r();
+	case 1: return cmd_r();
+	case 2: return ctl_r();
+	case 3: return dst_id_r();
+	case 4: return aux_status_r();
+	case 5: return own_id_r();
+	case 6: return int_status_r();
+	case 7: return src_id_r();
+	case 9: return dia_status_r();
+	case 0xc: return cnt_r<2>();
+	case 0xd: return cnt_r<1>();
+	case 0xe: return cnt_r<0>();
+	case 0xf: return tst_r();
+	default: return 0xff;
+	}
+}
+
+void ncr5385_device::reg_w(offs_t offset, u8 data)
+{
+	switch (offset)
+	{
+	case 0: dat_w(data); break;
+	case 1: cmd_w(data); break;
+	case 2: ctl_w(data); break;
+	case 3: dst_id_w(data); break;
+	case 0xc: cnt_w<2>(data); break;
+	case 0xd: cnt_w<1>(data); break;
+	case 0xe: cnt_w<0>(data); break;
+	case 0xf: tst_w(data); break;
+	default: break;
+	}
+}
+
 u8 ncr5385_device::dat_r()
 {
 	if (m_aux_status & AUX_STATUS_DATA_FULL)

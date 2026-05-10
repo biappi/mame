@@ -35,6 +35,8 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
+    , m_ncr_reg6_cache(0)
+    , m_ncr_reg6_cache_valid(false)
 {
 }
 
@@ -69,7 +71,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
         [this](device_t *device)
         {
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
-            adapter.irq().set_inputline(m_maincpu, M68K_IRQ_2);
+            adapter.irq().set(*this, FUNC(vme_pme6822_card_device::ncr_irq_w));
         });
 }
 
@@ -91,12 +93,15 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00060000, 0x0006001f).rw(m_duart, FUNC(mc68681_device::read), FUNC(mc68681_device::write));
 
     // NCR 5385 SCSI (register file @ byte offsets 0x0-0xf; OS-9 touches e.g. 0x00020009)
-    map(0x00020000, 0x0002000f).m(m_ncr, FUNC(ncr5385_device::map));
+    map(0x00020000, 0x0002000f).rw(FUNC(vme_pme6822_card_device::ncr_port_r), FUNC(vme_pme6822_card_device::ncr_port_w));
 }
 
 void vme_pme6822_card_device::device_start()
 {
 	LOG("%s\n", FUNCNAME);
+
+    save_item(NAME(m_ncr_reg6_cache));
+    save_item(NAME(m_ncr_reg6_cache_valid));
 
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
@@ -110,6 +115,52 @@ void vme_pme6822_card_device::device_start()
 					m_rtc->read(offset >> 2);
 			}
 		});
+}
+
+u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
+{
+    if (offset == 5)
+    {
+        if (!m_ncr_reg6_cache_valid)
+        {
+            m_ncr_reg6_cache = m_ncr->reg_r(6);
+            m_ncr_reg6_cache_valid = true;
+        }
+
+        if (m_ncr_reg6_cache != 0)
+        {
+            return 0x20;
+        } else {
+            return m_ncr->reg_r(5);
+        }
+    }
+
+    if (offset == 6)
+    {
+        if (!m_ncr_reg6_cache_valid)
+        {
+            m_ncr_reg6_cache = m_ncr->reg_r(6);
+            m_ncr_reg6_cache_valid = true;
+        }
+
+        return m_ncr_reg6_cache;
+    }
+
+    return m_ncr->reg_r(offset);
+}
+
+void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
+{
+    m_ncr->reg_w(offset, data);
+}
+
+void vme_pme6822_card_device::ncr_irq_w(int state)
+{
+    if (state) {
+        m_ncr_reg6_cache_valid = false;
+    }
+
+    m_maincpu->set_input_line(M68K_IRQ_3, state ? ASSERT_LINE : CLEAR_LINE);
 }
 
 void vme_pme6822_card_device::duart_output(uint8_t data)

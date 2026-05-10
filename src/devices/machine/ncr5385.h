@@ -54,6 +54,9 @@ public:
 
 	void map(address_map &map) ATTR_COLD;
 
+	u8 reg_r(offs_t offset);
+	void reg_w(offs_t offset, u8 data);
+
 	u8 dma_r();
 	void dma_w(u8 data);
 
