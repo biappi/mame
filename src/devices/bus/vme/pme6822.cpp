@@ -60,7 +60,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
     NSCSI_BUS(config, "scsi");
     NSCSI_CONNECTOR(config, "scsi:0", scsi_devices, nullptr);
     NSCSI_CONNECTOR(config, "scsi:1", scsi_devices, nullptr);
-    NSCSI_CONNECTOR(config, "scsi:2", scsi_devices, nullptr);
+    NSCSI_CONNECTOR(config, "scsi:2", scsi_devices, "harddisk");
     NSCSI_CONNECTOR(config, "scsi:3", scsi_devices, nullptr);
     NSCSI_CONNECTOR(config, "scsi:4", scsi_devices, nullptr);
     NSCSI_CONNECTOR(config, "scsi:5", scsi_devices, nullptr);
