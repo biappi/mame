@@ -530,7 +530,9 @@ void ncr5385_device::state_timer(s32 param)
 int ncr5385_device::state_step()
 {
 	u32 const ctrl = scsi_bus->ctrl_r();
-	int delay = 0;
+	// set delay (nanoseconds) to at one clock cycle by default, so to be a little physically accurate
+	// and give time to a CPU to reenable interrupts before the next state step
+	int delay = attotime::from_hz(clock()).attoseconds() / ATTOSECONDS_PER_NANOSECOND;
 
 	u8 const oid = 1 << m_own_id;
 	u8 const tid = 1 << m_dst_id;
@@ -774,6 +776,7 @@ int ncr5385_device::state_step()
 			scsi_bus->ctrl_w(scsi_refid, S_ACK, S_ACK | S_ATN);
 		else
 			scsi_bus->ctrl_w(scsi_refid, S_ACK, S_ACK);
+		delay = 10000;
 		break;
 	case XFI_OUT_ACK:
 		if (!(ctrl & S_REQ))
