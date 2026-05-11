@@ -113,6 +113,7 @@ private:
 	u8 m_src_id;
 	u8 m_dia_status;
 	u32 m_cnt;
+	u32 m_prev_ctrl;
 
 	// other state
 	u32 m_state;

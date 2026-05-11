@@ -23,7 +23,7 @@
 #define LOG_DMA      (1U << 4)
 #define LOG_COMMAND  (1U << 5)
 
-//#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_STATE|LOG_DMA|LOG_COMMAND)
+#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_STATE|LOG_DMA|LOG_COMMAND)
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(NCR5385, ncr5385_device, "ncr5385", "NCR 5385 SCSI Protocol Controller")
@@ -166,7 +166,25 @@ void ncr5385_device::scsi_ctrl_changed()
 {
 	u32 const ctrl = scsi_bus->ctrl_r();
 
+	bool req_now  = !!(ctrl & S_REQ);
+	bool req_prev = !!(m_prev_ctrl & S_REQ);
+	
+	bool req_fell = req_prev && !req_now;
+	
+	m_prev_ctrl = ctrl;
+	
 	static char const *const nscsi_phase[] = { "DATA OUT", "DATA IN", "COMMAND", "STATUS", "*", "*", "MESSAGE OUT", "MESSAGE IN" };
+
+	if (req_fell && m_state == XFI_OUT_ACK)
+	{
+		// complete handshake cycle explicitly
+		scsi_bus->ctrl_w(scsi_refid, 0, S_ACK);
+	
+		m_state = XFI_OUT_REQ; // or next correct substate
+	
+		m_state_timer->adjust(attotime::zero);
+	}
+
 
 	if ((ctrl & S_BSY) && !(ctrl & S_SEL))
 	{
@@ -515,16 +533,21 @@ void ncr5385_device::dma_w(u8 data)
 
 void ncr5385_device::state_timer(s32 param)
 {
-	// step state machine
-	int const delay = state_step();
+	int delay;
 
-	// check for data stall
+	do
+	{
+		delay = state_step();
+
+		if (m_state == IDLE)
+			return;
+
+	} while (delay == 0);  // 🔴 IMPORTANT: keep running while ready
+
 	if (delay < 0)
-		return;
+		delay = 100; // don't stall FSM
 
-	// repeat until idle
-	if (m_state != IDLE)
-		m_state_timer->adjust(attotime::from_nsec(delay));
+	m_state_timer->adjust(attotime::from_nsec(delay));
 }
 
 int ncr5385_device::state_step()
@@ -536,6 +559,11 @@ int ncr5385_device::state_step()
 
 	u8 const oid = 1 << m_own_id;
 	u8 const tid = 1 << m_dst_id;
+
+	LOGMASKED(LOG_STATE, "state_step state=%x REQ=%d ACK=%d\n",
+		m_state,
+		!!(scsi_bus->ctrl_r() & S_REQ),
+		!!(scsi_bus->ctrl_r() & S_ACK));	
 
 	switch (m_state)
 	{
@@ -778,32 +806,37 @@ int ncr5385_device::state_step()
 			scsi_bus->ctrl_w(scsi_refid, S_ACK, S_ACK);
 		delay = 10000;
 		break;
-	case XFI_OUT_ACK:
-		if (!(ctrl & S_REQ))
+		case XFI_OUT_ACK:
 		{
-			if (BIT(m_cmd, 0))
-				m_state = XFI_OUT_PAD;
-			else
-				m_state = XFI_OUT_REQ;
-
-			if (!(m_cmd & CMD_SBX))
+			bool req = BIT(ctrl, S_REQ);
+			bool ack = BIT(ctrl, S_ACK);
+			
+			// WAIT for full handshake completion
+			if (!req && !ack)
 			{
-				m_cnt--;
-
-				LOGMASKED(LOG_STATE, "xfi_out: %d remaining\n", m_cnt);
-
-				if (!m_cnt)
-					m_aux_status |= AUX_STATUS_TC_ZERO;
+				if (!(m_cmd & CMD_SBX))
+				{
+					m_cnt--;
+					
+					LOGMASKED(LOG_STATE, "xfi_out: %d remaining\n", m_cnt);
+					
+					if (!m_cnt)
+						m_aux_status |= AUX_STATUS_TC_ZERO;
+				}
+				else
+				{
+					m_sbx = false;
+				}
+				
+				if (BIT(m_cmd, 0))
+					m_state = XFI_OUT_PAD;
+				else
+					m_state = XFI_OUT_REQ;
+				
+				scsi_bus->data_w(scsi_refid, 0);
+				scsi_bus->ctrl_w(scsi_refid, 0, S_ACK);
 			}
-			else
-				m_sbx = false;
-
-			// clear data and ACK
-			scsi_bus->data_w(scsi_refid, 0);
-			scsi_bus->ctrl_w(scsi_refid, 0, S_ACK);
 		}
-		else
-			delay = -1;
 		break;
 	case XFI_OUT_PAD:
 		if (ctrl & S_REQ)
