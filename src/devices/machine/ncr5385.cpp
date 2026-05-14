@@ -529,6 +529,11 @@ void ncr5385_device::state_timer(s32 param)
 
 int ncr5385_device::state_step()
 {
+	LOGMASKED(LOG_STATE, "state_step state=%d mode=%d (time=%s)\n", 
+		m_state, 
+		m_mode, 
+		machine().time().to_string()
+		);
 	u32 const ctrl = scsi_bus->ctrl_r();
 	// set delay (nanoseconds) to at one clock cycle by default, so to be a little physically accurate
 	// and give time to a CPU to reenable interrupts before the next state step
@@ -740,6 +745,7 @@ int ncr5385_device::state_step()
 	case XFI_OUT_REQ:
 		if (ctrl & S_REQ)
 		{
+			LOGMASKED(LOG_STATE, "xfi_out: REQ asserted, data 0x%02x\n", m_dat);
 			// TODO: disconnect
 			if (remaining() && (ctrl & S_PHASE_MASK) == m_phase)
 			{
@@ -761,8 +767,10 @@ int ncr5385_device::state_step()
 				update_int();
 			}
 		}
-		else
+		else {
+			LOGMASKED(LOG_STATE, "xfi_out: waiting for REQ\n");
 			delay = -1;
+		}
 		break;
 	case XFI_OUT_DRQ:
 		m_state = XFI_OUT_ACK;
