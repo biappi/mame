@@ -151,6 +151,10 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
+    if (m_ncr_reg6_cache_valid && offset == 1 && (data & 0x0f) == 4)
+    {
+        m_ncr_reg6_cache_valid = false;
+    }
     m_ncr->reg_w(offset, data);
 }
 
