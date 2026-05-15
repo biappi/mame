@@ -117,6 +117,14 @@ void vme_pme6822_card_device::device_start()
 		});
 }
 
+void vme_pme6822_card_device::device_reset()
+{
+    LOG("%s\n", FUNCNAME);
+
+    m_ncr_reg6_cache = 0;
+    m_ncr_reg6_cache_valid = false;
+}
+
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 {
     if (offset == 5)
