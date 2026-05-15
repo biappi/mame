@@ -71,6 +71,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
         [this](device_t *device)
         {
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
+            adapter.set_own_id(7);
             adapter.irq().set(*this, FUNC(vme_pme6822_card_device::ncr_irq_w));
         });
 }
@@ -135,12 +136,10 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
             m_ncr_reg6_cache_valid = true;
         }
 
-        if (m_ncr_reg6_cache != 0)
-        {
-            return 0x20;
-        } else {
-            return m_ncr->reg_r(5);
-        }
+        bool reg6_is_nonzero = (m_ncr_reg6_cache != 0);
+        // In register 5 of NCR 5386, the lower three bits contain the controller's own ID.
+        // In PME 68-22's case, the bit 5 also tells if any bit in register 6 is set.
+        return ((reg6_is_nonzero ? 1 : 0) << 5) | 7;
     }
 
     if (offset == 6)
