@@ -52,6 +52,7 @@ private:
 
     u8 ncr_port_r(offs_t offset);
     void ncr_port_w(offs_t offset, u8 data);
+    void update_ncr_reg6_cache_on_port_w(offs_t offset, u8 data);
     void ncr_irq_w(int state);
 
     void duart_output(uint8_t data);

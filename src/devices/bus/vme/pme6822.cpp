@@ -158,13 +158,18 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
+    update_ncr_reg6_cache_on_port_w(offset, data);
+    m_ncr->reg_w(offset, data);
+}
+
+void vme_pme6822_card_device::update_ncr_reg6_cache_on_port_w(offs_t offset, u8 data)
+{
     if (m_ncr_reg6_cache_valid // have cache that may be dirty?
         && offset == 1         // sending command?
         && (data & 0x0f) == 4) // is Transfer Info (PIO or DMA, single or multibyte)
     {
         m_ncr_reg6_cache_valid = false;
     }
-    m_ncr->reg_w(offset, data);
 }
 
 void vme_pme6822_card_device::ncr_irq_w(int state)
