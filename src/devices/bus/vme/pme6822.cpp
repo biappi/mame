@@ -37,6 +37,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_eprom1_region("eprom1")
     , m_ncr_reg6_cache(0)
     , m_ncr_reg6_cached_at(attotime::zero)
+    , m_ncr_dma_waiting(false)
 {
 }
 
@@ -73,6 +74,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
             adapter.set_own_id(7);
             adapter.irq().set_inputline(m_maincpu, M68K_IRQ_3);
+            adapter.dreq().set(*this, FUNC(vme_pme6822_card_device::ncr_dreq));
         });
 }
 
@@ -95,6 +97,9 @@ void vme_pme6822_card_device::main_map(address_map &map)
 
     // NCR 5385 SCSI (register file @ byte offsets 0x0-0xf; OS-9 touches e.g. 0x00020009)
     map(0x00020000, 0x0002000f).rw(FUNC(vme_pme6822_card_device::ncr_port_r), FUNC(vme_pme6822_card_device::ncr_port_w));
+
+    // RAM for DMA transfers with the SCSI controller
+    map(0x00030000, 0x00030003).rw(FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_r), FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_w));
 }
 
 void vme_pme6822_card_device::device_start()
@@ -103,6 +108,9 @@ void vme_pme6822_card_device::device_start()
 
     save_item(NAME(m_ncr_reg6_cache));
     save_item(NAME(m_ncr_reg6_cached_at));
+    save_item(NAME(m_ncr_dma_waiting));
+    // FIXME either change to vector or add support to save std::queues
+    // save_item(NAME(m_ncr_dma_w_queue));
 
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
@@ -124,6 +132,8 @@ void vme_pme6822_card_device::device_reset()
 
     m_ncr_reg6_cache = 0;
     m_ncr_reg6_cached_at = attotime::zero;
+    m_ncr_dma_waiting = false;
+    m_ncr_dma_w_queue = std::queue<u8>();
 }
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
@@ -171,6 +181,48 @@ bool vme_pme6822_card_device::ncr_reg6_cache_valid() const
     return valid; 
 }
 
+u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
+{
+    u8 value = m_ncr->dma_r();
+    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x\n", offset, value);
+    return value;
+}
+
+void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
+{
+    LOG("NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
+    m_ncr_dma_w_queue.push(data);
+
+    if (m_ncr_dma_waiting)
+    {
+        // if the NCR was waiting for data, that's the time to make it happy
+        u8 data = m_ncr_dma_w_queue.front();
+        m_ncr_dma_w_queue.pop();
+        m_ncr->dma_w(data);
+
+        m_ncr_dma_waiting = false;
+    }
+}
+
+void vme_pme6822_card_device::ncr_dreq(int state)
+{
+    if (!state) {
+        return;
+    }
+    
+    LOG("NCR5385: dreq(%d) queue size=%d\n", state, m_ncr_dma_w_queue.size());
+    if (m_ncr_dma_w_queue.empty()) {
+        // if queue is empty, just note that we're waiting
+        m_ncr_dma_waiting = true;
+    } else if (state)
+    {      
+        u8 data = m_ncr_dma_w_queue.front();
+        // if queue is not empty, write the next byte and pop the queue
+        m_ncr->dma_w(data);
+        m_ncr_dma_w_queue.pop();
+        m_ncr_dma_waiting = false;
+    }
+}
 
 void vme_pme6822_card_device::duart_output(uint8_t data)
 {
