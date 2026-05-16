@@ -14,6 +14,7 @@
 #include "machine/ds1215.h"
 #include "machine/ncr5385.h"
 #include "machine/nscsi_bus.h"
+#include <queue>
 
 DECLARE_DEVICE_TYPE(VME_PME6822, vme_pme6822_card_device)
 
@@ -48,11 +49,18 @@ private:
     uint8_t m_ncr_reg6_cache;
     attotime m_ncr_reg6_cached_at;
 
+    bool m_ncr_dma_waiting;
+    std::queue<u8> m_ncr_dma_w_queue;
+
     void main_map(address_map &map) ATTR_COLD;
 
     u8 ncr_port_r(offs_t offset);
     void ncr_port_w(offs_t offset, u8 data);
     bool ncr_reg6_cache_valid() const;
+
+    u8 ncr_dma_scratchpad_r(offs_t offset);
+    void ncr_dma_scratchpad_w(offs_t offset, u8 data);
+    void ncr_dreq(int state);
 
     void duart_output(uint8_t data);
     void duart_a_tx(int state);
