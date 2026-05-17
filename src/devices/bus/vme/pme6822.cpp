@@ -226,7 +226,15 @@ void vme_pme6822_card_device::ncr_dreq(int state)
 
 void vme_pme6822_card_device::duart_output(uint8_t data)
 {
-    LOG("DUART_OUTPUT: %02X '%c'\n", data, data);
+    LOG("DUART_OUTPUT: %02X %c%c%c%c%c%c%c%c\n", data, 
+        (data & 0x80) ? '7' : '.',
+        (data & 0x40) ? '6' : '.',
+        (data & 0x20) ? '5' : '.',
+        (data & 0x10) ? '4' : '.',
+        (data & 0x08) ? '3' : '.',
+        (data & 0x04) ? '2' : '.',
+        (data & 0x02) ? '1' : '.',
+        (data & 0x01) ? '0' : '.');
 }
 
 void vme_pme6822_card_device::duart_a_tx(int state)
