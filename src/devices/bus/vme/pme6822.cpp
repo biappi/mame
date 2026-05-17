@@ -38,6 +38,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_reg6_cache(0)
     , m_ncr_reg6_cached_at(attotime::zero)
     , m_ncr_dma_waiting(false)
+    , m_ncr_transfer_counter(0)
 {
 }
 
@@ -111,6 +112,7 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_dma_waiting));
     // FIXME either change to vector or add support to save std::queues
     // save_item(NAME(m_ncr_dma_w_queue));
+    save_item(NAME(m_ncr_transfer_counter));
 
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
@@ -134,6 +136,7 @@ void vme_pme6822_card_device::device_reset()
     m_ncr_reg6_cached_at = attotime::zero;
     m_ncr_dma_waiting = false;
     m_ncr_dma_w_queue = std::queue<u8>();
+    m_ncr_transfer_counter = 0;
 }
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
@@ -169,6 +172,12 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
+    if (offset >= 0xC && offset < 0xF)
+    {
+        // capture the Transfer Counter value; will be used for DMA.
+        offs_t counter_offset = offset - 0xC;
+        m_ncr_transfer_counter = (m_ncr_transfer_counter & ~(0xFF << (counter_offset * 8))) | (u32(data) << (counter_offset * 8));
+    }
     m_ncr->reg_w(offset, data);
 }
 
@@ -210,7 +219,7 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         return;
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
-    LOG("NCR5385: dreq(%d) queue size=%d dir=%s\n", state, m_ncr_dma_w_queue.size(), dir_is_in ? "in" : "out");
+    LOG("NCR5385: dreq(%d) queue size=%d count=%d dir=%s\n", state, m_ncr_dma_w_queue.size(), m_ncr_transfer_counter, dir_is_in ? "in" : "out");
     if (m_ncr_dma_w_queue.empty()) {
         // if queue is empty, just note that we're waiting
         m_ncr_dma_waiting = true;
