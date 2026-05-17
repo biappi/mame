@@ -112,6 +112,7 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_dma_waiting));
     // FIXME either change to vector or add support to save std::queues
     // save_item(NAME(m_ncr_dma_w_queue));
+    // save_item(NAME(m_ncr_dma_r_queue));
     save_item(NAME(m_ncr_transfer_counter));
 
     // memory tap offers a tidy solution for the "phantom" rtc
@@ -136,6 +137,7 @@ void vme_pme6822_card_device::device_reset()
     m_ncr_reg6_cached_at = attotime::zero;
     m_ncr_dma_waiting = false;
     m_ncr_dma_w_queue = std::queue<u8>();
+    m_ncr_dma_r_queue = std::queue<u8>();
     m_ncr_transfer_counter = 0;
 }
 
@@ -202,9 +204,14 @@ bool vme_pme6822_card_device::ncr_reg6_cache_valid() const
 
 u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 {
-    u8 value = m_ncr->dma_r();
-    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x\n", offset, value);
-    return value;
+    if (m_ncr_dma_r_queue.size() == 0) {
+        return 0;
+    }
+
+    u8 data = m_ncr_dma_r_queue.front();
+    m_ncr_dma_r_queue.pop();
+    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x\n", offset, data);
+    return data;
 }
 
 void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
@@ -230,16 +237,30 @@ void vme_pme6822_card_device::ncr_dreq(int state)
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
     LOG("NCR5385: dreq(%d) queue size=%d count=%d dir=%s\n", state, m_ncr_dma_w_queue.size(), m_ncr_transfer_counter, dir_is_in ? "in" : "out");
-    if (m_ncr_dma_w_queue.empty()) {
-        // if queue is empty, just note that we're waiting
-        m_ncr_dma_waiting = true;
-    } else if (state)
-    {      
-        u8 data = m_ncr_dma_w_queue.front();
-        // if queue is not empty, write the next byte and pop the queue
-        m_ncr->dma_w(data);
-        m_ncr_dma_w_queue.pop();
-        m_ncr_dma_waiting = false;
+    if (!dir_is_in) {
+        if (m_ncr_dma_w_queue.empty()) {
+            // if queue is empty, just note that we're waiting
+            m_ncr_dma_waiting = true;
+        } else if (state)
+        {      
+            u8 data = m_ncr_dma_w_queue.front();
+            // if queue is not empty, write the next byte and pop the queue
+            m_ncr->dma_w(data);
+            m_ncr_dma_w_queue.pop();
+            m_ncr_dma_waiting = false;
+        }
+    } else {
+        // the CPU may read the entire block in one go (by reading the DMA scratchpad repeatedly),
+        // so we must read it all in a FIFO of ours then flush it via the scratchpad.
+        // Read is asyncronous i.e. the NCR will assert DREQ for each byte.
+        u8 data = m_ncr->dma_r();
+        m_ncr_dma_r_queue.push(data);
+        m_ncr_transfer_counter--;
+
+        bool transfer_in_progress = (m_ncr_transfer_counter > 0);
+        m_duart->ip2_w(transfer_in_progress ? 1 : 0);
+
+        LOG("NCR5385: dreq read byte %02x queue size=%d in progress=%s\n", data, m_ncr_dma_r_queue.size(), transfer_in_progress ? "yes" : "no");
     }
 }
 
