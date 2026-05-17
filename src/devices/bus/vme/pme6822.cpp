@@ -36,7 +36,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
     , m_ncr_reg6_cache(0)
-    , m_ncr_reg6_cache_valid(false)
+    , m_ncr_reg6_cached_at(attotime::zero)
 {
 }
 
@@ -72,7 +72,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
         {
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
             adapter.set_own_id(7);
-            adapter.irq().set(*this, FUNC(vme_pme6822_card_device::ncr_irq_w));
+            adapter.irq().set_inputline(m_maincpu, M68K_IRQ_3);
         });
 }
 
@@ -102,7 +102,7 @@ void vme_pme6822_card_device::device_start()
 	LOG("%s\n", FUNCNAME);
 
     save_item(NAME(m_ncr_reg6_cache));
-    save_item(NAME(m_ncr_reg6_cache_valid));
+    save_item(NAME(m_ncr_reg6_cached_at));
 
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
@@ -123,17 +123,17 @@ void vme_pme6822_card_device::device_reset()
     LOG("%s\n", FUNCNAME);
 
     m_ncr_reg6_cache = 0;
-    m_ncr_reg6_cache_valid = false;
+    m_ncr_reg6_cached_at = attotime::zero;
 }
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 {
     if (offset == 5)
     {
-        if (!m_ncr_reg6_cache_valid)
+        if (!ncr_reg6_cache_valid())
         {
             m_ncr_reg6_cache = m_ncr->reg_r(6);
-            m_ncr_reg6_cache_valid = true;
+            m_ncr_reg6_cached_at = machine().time();
         }
 
         bool reg6_is_nonzero = (m_ncr_reg6_cache != 0);
@@ -144,10 +144,11 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
     if (offset == 6)
     {
-        if (!m_ncr_reg6_cache_valid)
+        bool cache_valid = ncr_reg6_cache_valid();
+        if (!cache_valid)
         {
             m_ncr_reg6_cache = m_ncr->reg_r(6);
-            m_ncr_reg6_cache_valid = true;
+            m_ncr_reg6_cached_at = machine().time();
         }
 
         return m_ncr_reg6_cache;
@@ -158,41 +159,18 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
-    update_ncr_reg6_cache_on_port_w(offset, data);
     m_ncr->reg_w(offset, data);
 }
 
-void vme_pme6822_card_device::update_ncr_reg6_cache_on_port_w(offs_t offset, u8 data)
+bool vme_pme6822_card_device::ncr_reg6_cache_valid() const
 {
-    // Have a cache that may be dirty?
-    if (!m_ncr_reg6_cache_valid) {
-        return;
-    }
-
-    // Sending a command?
-    if (offset != 1) {
-        return;
-    }
-
-    // Don't care if it's single-byte, multi-byte or DMA
-    u8 command = data & 0x0f;
-
-    // Is it the "Transfer Information" command?
-    if (command != 4) {
-        return;
-    }
-
-    m_ncr_reg6_cache_valid = false;
+    attotime now = machine().time();
+    // Hold the cache valid for 50 microseconds: long enough to do a few reads after
+    // an interrupt, short enough to avoid returning stale data for too long.
+    bool valid = (now - m_ncr_reg6_cached_at) < attotime::from_usec(50);
+    return valid; 
 }
 
-void vme_pme6822_card_device::ncr_irq_w(int state)
-{
-    if (state) {
-        m_ncr_reg6_cache_valid = false;
-    }
-
-    m_maincpu->set_input_line(M68K_IRQ_3, state ? ASSERT_LINE : CLEAR_LINE);
-}
 
 void vme_pme6822_card_device::duart_output(uint8_t data)
 {
