@@ -209,8 +209,8 @@ void vme_pme6822_card_device::ncr_dreq(int state)
     if (!state) {
         return;
     }
-    
-    LOG("NCR5385: dreq(%d) queue size=%d\n", state, m_ncr_dma_w_queue.size());
+    bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
+    LOG("NCR5385: dreq(%d) queue size=%d dir=%s\n", state, m_ncr_dma_w_queue.size(), dir_is_in ? "in" : "out");
     if (m_ncr_dma_w_queue.empty()) {
         // if queue is empty, just note that we're waiting
         m_ncr_dma_waiting = true;
