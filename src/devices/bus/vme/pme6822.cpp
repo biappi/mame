@@ -175,8 +175,9 @@ void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
     if (offset >= 0xC && offset < 0xF)
     {
         // capture the Transfer Counter value; will be used for DMA.
-        offs_t counter_offset = offset - 0xC;
-        m_ncr_transfer_counter = (m_ncr_transfer_counter & ~(0xFF << (counter_offset * 8))) | (u32(data) << (counter_offset * 8));
+        offs_t counter_shift = (2 - (offset - 0xC)) * 8;
+        m_ncr_transfer_counter &= ~(0xFF << counter_shift);
+        m_ncr_transfer_counter |= (u32(data) << counter_shift);
     }
     m_ncr->reg_w(offset, data);
 }
