@@ -51,6 +51,7 @@ private:
 
     bool m_ncr_dma_waiting;
     std::queue<u8> m_ncr_dma_w_queue;
+    u32 m_ncr_transfer_counter;
 
     void main_map(address_map &map) ATTR_COLD;
 
