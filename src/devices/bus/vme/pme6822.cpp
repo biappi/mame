@@ -137,6 +137,7 @@ void vme_pme6822_card_device::device_reset()
     m_ncr_dma_w_queue = std::queue<u8>();
     m_ncr_dma_r_queue = std::queue<u8>();
     m_ncr_transfer_counter = 0;
+    m_duart->ip2_w(true);
 }
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
@@ -148,7 +149,7 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
         // In PME 68-22's case, the bit 5 also tells if the IRQ signal is/was asserted, 
         // or if the SEL signal in the SCSI bus is asserted.
         // Don't ask me why, the Aesthedes driver wants that.
-        bool irq_was_asserted = ncr_int_cache_valid() && m_ncr_int_state;
+        bool irq_was_asserted = ncr_int_cache_valid() || m_ncr_int_state;
         return ((irq_was_asserted ? 1 : 0) << 5) | 7;
     }
 
@@ -197,7 +198,11 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 
     u8 data = m_ncr_dma_r_queue.front();
     m_ncr_dma_r_queue.pop();
-    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x\n", offset, data);
+    size_t size = m_ncr_dma_r_queue.size();
+    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x queue size=%d\n", offset, data, size);
+    if (size == 0) {
+        m_duart->ip2_w(true);
+    }
     return data;
 }
 
@@ -245,7 +250,9 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         m_ncr_transfer_counter--;
 
         bool transfer_in_progress = (m_ncr_transfer_counter > 0);
-        m_duart->ip2_w(transfer_in_progress ? 1 : 0);
+        if (!transfer_in_progress) {
+            m_duart->ip2_w(false);
+        }
 
         LOG("NCR5385: dreq read byte %02x queue size=%d in progress=%s\n", data, m_ncr_dma_r_queue.size(), transfer_in_progress ? "yes" : "no");
     }
