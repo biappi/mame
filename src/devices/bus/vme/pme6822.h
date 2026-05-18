@@ -46,8 +46,8 @@ private:
     const char *m_eprom0_region;
     const char *m_eprom1_region;
 
-    uint8_t m_ncr_reg6_cache;
-    attotime m_ncr_reg6_cached_at;
+    attotime m_ncr_int_cached_at;
+    int m_ncr_int_state;
 
     bool m_ncr_dma_waiting;
     std::queue<u8> m_ncr_dma_w_queue;
@@ -58,7 +58,8 @@ private:
 
     u8 ncr_port_r(offs_t offset);
     void ncr_port_w(offs_t offset, u8 data);
-    bool ncr_reg6_cache_valid() const;
+    void ncr_irq_w(int state);
+    bool ncr_int_cache_valid() const;
 
     u8 ncr_dma_scratchpad_r(offs_t offset);
     void ncr_dma_scratchpad_w(offs_t offset, u8 data);

@@ -35,8 +35,8 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_duart_a_tx(*this)
     , m_eprom0_region("eprom0")
     , m_eprom1_region("eprom1")
-    , m_ncr_reg6_cache(0)
-    , m_ncr_reg6_cached_at(attotime::zero)
+    , m_ncr_int_cached_at(attotime::zero)
+    , m_ncr_int_state(false)
     , m_ncr_dma_waiting(false)
     , m_ncr_transfer_counter(0)
 {
@@ -74,7 +74,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
         {
             ncr5385_device &adapter = downcast<ncr5385_device &>(*device);
             adapter.set_own_id(7);
-            adapter.irq().set_inputline(m_maincpu, M68K_IRQ_3);
+            adapter.irq().set(*this, FUNC(vme_pme6822_card_device::ncr_irq_w));
             adapter.dreq().set(*this, FUNC(vme_pme6822_card_device::ncr_dreq));
         });
 }
@@ -107,8 +107,7 @@ void vme_pme6822_card_device::device_start()
 {
 	LOG("%s\n", FUNCNAME);
 
-    save_item(NAME(m_ncr_reg6_cache));
-    save_item(NAME(m_ncr_reg6_cached_at));
+    save_item(NAME(m_ncr_int_cached_at));
     save_item(NAME(m_ncr_dma_waiting));
     // FIXME either change to vector or add support to save std::queues
     // save_item(NAME(m_ncr_dma_w_queue));
@@ -133,8 +132,7 @@ void vme_pme6822_card_device::device_reset()
 {
     LOG("%s\n", FUNCNAME);
 
-    m_ncr_reg6_cache = 0;
-    m_ncr_reg6_cached_at = attotime::zero;
+    m_ncr_int_cached_at = attotime::zero;
     m_ncr_dma_waiting = false;
     m_ncr_dma_w_queue = std::queue<u8>();
     m_ncr_dma_r_queue = std::queue<u8>();
@@ -143,37 +141,15 @@ void vme_pme6822_card_device::device_reset()
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 {
-    LOG("NCR5385: reg_r(%x)\n", offset);
+    LOG("NCR5385: reg_r(%x), %s\n", offset, machine().describe_context());
     if (offset == 5)
     {
-        bool cache_valid = ncr_reg6_cache_valid();
-        LOG("NCR5385: reg_r(5) with reg6_cache_valid=%d cache=%02x\n", cache_valid, m_ncr_reg6_cache);
-        if (!cache_valid)
-        {
-            m_ncr_reg6_cache = m_ncr->reg_r(6);
-            m_ncr_reg6_cached_at = machine().time();
-            LOG("NCR5385: reg_r(5) updated reg6 cache=%02x\n", m_ncr_reg6_cache);
-        }
-
-        bool reg6_is_nonzero = (m_ncr_reg6_cache != 0);
         // In register 5 of NCR 5386, the lower three bits contain the controller's own ID.
-        // In PME 68-22's case, the bit 5 also tells if any bit in register 6 is set.
-        return ((reg6_is_nonzero ? 1 : 0) << 5) | 7;
-    }
-
-    if (offset == 6)
-    {
-        bool cache_valid = ncr_reg6_cache_valid();
-        LOG("NCR5385: reg_r(6) with reg6_cache_valid=%d cache=%02x\n", cache_valid, m_ncr_reg6_cache);
-        if (!cache_valid)
-        {
-            m_ncr_reg6_cache = m_ncr->reg_r(6);
-            m_ncr_reg6_cached_at = machine().time();
-            LOG("NCR5385: reg_r(6) updated reg6 cache=%02x\n", m_ncr_reg6_cache);
-        }
-
-        LOG("NCR5385: reg_r(6) returning cache=%02x\n", m_ncr_reg6_cache);
-        return m_ncr_reg6_cache;
+        // In PME 68-22's case, the bit 5 also tells if the IRQ signal is/was asserted, 
+        // or if the SEL signal in the SCSI bus is asserted.
+        // Don't ask me why, the Aesthedes driver wants that.
+        bool irq_was_asserted = ncr_int_cache_valid() && m_ncr_int_state;
+        return ((irq_was_asserted ? 1 : 0) << 5) | 7;
     }
 
     return m_ncr->reg_r(offset);
@@ -192,13 +168,24 @@ void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
     m_ncr->reg_w(offset, data);
 }
 
-bool vme_pme6822_card_device::ncr_reg6_cache_valid() const
+void vme_pme6822_card_device::ncr_irq_w(int state)
+{
+    m_ncr_int_state = state;
+    if (state == 1) {
+        m_ncr_int_cached_at = machine().time();
+    }
+
+    m_maincpu->set_input_line(M68K_IRQ_3, state ? ASSERT_LINE : CLEAR_LINE);
+}
+
+
+bool vme_pme6822_card_device::ncr_int_cache_valid() const
 {
     attotime now = machine().time();
     // Hold the cache valid for 50 microseconds: long enough to do a few reads after
     // an interrupt, short enough to avoid returning stale data for too long.
-    bool valid = (now - m_ncr_reg6_cached_at) < attotime::from_usec(50);
-    LOG("NCR5385: reg6_cache_valid() cached_at=%s now=%s valid=%d\n", m_ncr_reg6_cached_at.as_string(), now.as_string(), valid);
+    bool valid = (now - m_ncr_int_cached_at) < attotime::from_usec(50);
+    LOG("NCR5385: ncr_int_cache_valid() cached_at=%s now=%s valid=%d state=%d\n", m_ncr_int_cached_at.as_string(), now.as_string(), valid, m_ncr_int_state);
     return valid; 
 }
 
