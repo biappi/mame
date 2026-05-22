@@ -52,7 +52,10 @@ private:
     bool m_ncr_dma_waiting;
     std::queue<u8> m_ncr_dma_w_queue;
     std::queue<u8> m_ncr_dma_r_queue;
+    // Decremented during DMA transfers.
     u32 m_ncr_transfer_counter;
+    // Set every time the NCR Trasfer Counter is written.
+    u32 m_ncr_transfer_counter_captured;
 
     void main_map(address_map &map) ATTR_COLD;
 
