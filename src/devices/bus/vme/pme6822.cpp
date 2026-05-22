@@ -128,6 +128,34 @@ void vme_pme6822_card_device::device_start()
 					m_rtc->read(offset >> 2);
 			}
 		});
+
+    // When reading/writing a sector, SCSILIB transfers 1KiB to/from NCR DMA buffer
+    // instead of 512 byte (or whatever the Transfer Counter is), causing memory corruption.
+    //
+    // Disassembly:
+    //                      LAB_0801a7c2                                    XREF[1]:     0801a7b6(j)  
+    // 0801a7c2 3a 3c 00 ff     move.w     #0xff,D5w                                        transfer 1024 bytes from queue
+    //                      LAB_0801a7c6                                    XREF[1]:     0801a7c8(j)  
+    // 0801a7c6 20 d4           move.l     (A4),(A0)+
+    // 0801a7c8 51 cd ff fc     dbf        D5w,LAB_0801a7c6
+    //
+    // 1 KiB = (0xff + 1 /*due to dbf/dbra counting one more*/) * 4 /*bytes read by move.l*/
+    // How this worked in the real Aesthedes 2 hardware, beats me.
+    // To fix this, this ugly hack patches the "#0xff" value on the fly such that it copies
+    // the right amount, i.e. the value of NCR's Transfer Counter register divided by 4, minus one.
+    m_maincpu->space(AS_PROGRAM).install_read_tap(0x0801A7C4, 0x0801A7C7, "ram", 
+        [this](offs_t offset, u32 &data, u32 mem_mask)
+		{
+            LOG("ugly patch offset $%08X data $%08X mask $%08X, %s\n", offset, data, mem_mask, machine().describe_context());
+            if ((data == 0x00ff20d4) && (mem_mask & 0x00ff0000)) {
+                // Hack in a hack: OS-9 computes module checksums so this patching shouldn't go unnoticed.
+                // But m_ncr_transfer_counter_captured is 0 at startup, this makes the byte patched to 0xff
+                // i.e. the original value.
+                data &= 0xff00ffff;
+                data |= (((m_ncr_transfer_counter_captured / 4) - 1) & 0xff) << 16;
+                LOG("patched! xfer counter %d data $%08X\n", m_ncr_transfer_counter_captured, data);
+            }
+        });
 }
 
 void vme_pme6822_card_device::device_reset()
