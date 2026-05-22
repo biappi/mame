@@ -39,6 +39,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_int_state(false)
     , m_ncr_dma_waiting(false)
     , m_ncr_transfer_counter(0)
+    , m_ncr_transfer_counter_captured(0)
 {
 }
 
@@ -113,6 +114,7 @@ void vme_pme6822_card_device::device_start()
     // save_item(NAME(m_ncr_dma_w_queue));
     // save_item(NAME(m_ncr_dma_r_queue));
     save_item(NAME(m_ncr_transfer_counter));
+    save_item(NAME(m_ncr_transfer_counter_captured));
 
     // memory tap offers a tidy solution for the "phantom" rtc
 	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
@@ -163,8 +165,9 @@ void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
     {
         // capture the Transfer Counter value; will be used for DMA.
         offs_t counter_shift = (2 - (offset - 0xC)) * 8;
-        m_ncr_transfer_counter &= ~(0xFF << counter_shift);
-        m_ncr_transfer_counter |= (u32(data) << counter_shift);
+        m_ncr_transfer_counter_captured &= ~(0xFF << counter_shift);
+        m_ncr_transfer_counter_captured |= (u32(data) << counter_shift);
+        m_ncr_transfer_counter = m_ncr_transfer_counter_captured;
     }
     m_ncr->reg_w(offset, data);
 }
