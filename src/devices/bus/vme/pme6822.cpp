@@ -18,6 +18,8 @@ DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radst
 
 namespace {
 
+static size_t NCR_DMA_BUFFER_SIZE = 1024;
+
 static void scsi_devices(device_slot_interface &device)
 {
 	device.option_add("harddisk", NSCSI_HARDDISK);
@@ -38,6 +40,8 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_int_cached_at(attotime::zero)
     , m_ncr_int_state(false)
     , m_ncr_dma_waiting(false)
+    , m_ncr_dma_read_head(0)
+    , m_ncr_dma_write_head(0)
     , m_ncr_transfer_counter(0)
     , m_ncr_transfer_counter_captured(0)
 {
@@ -110,9 +114,9 @@ void vme_pme6822_card_device::device_start()
 
     save_item(NAME(m_ncr_int_cached_at));
     save_item(NAME(m_ncr_dma_waiting));
-    // FIXME either change to vector or add support to save std::queues
-    // save_item(NAME(m_ncr_dma_w_queue));
-    // save_item(NAME(m_ncr_dma_r_queue));
+    save_item(NAME(m_ncr_dma_buffer));
+    save_item(NAME(m_ncr_dma_read_head));
+    save_item(NAME(m_ncr_dma_write_head));
     save_item(NAME(m_ncr_transfer_counter));
     save_item(NAME(m_ncr_transfer_counter_captured));
 
@@ -136,8 +140,10 @@ void vme_pme6822_card_device::device_reset()
 
     m_ncr_int_cached_at = attotime::zero;
     m_ncr_dma_waiting = false;
-    m_ncr_dma_w_queue = std::queue<u8>();
-    m_ncr_dma_r_queue = std::queue<u8>();
+    m_ncr_dma_buffer.clear();
+    m_ncr_dma_buffer.resize(NCR_DMA_BUFFER_SIZE);
+    m_ncr_dma_read_head = 0;
+    m_ncr_dma_write_head = 0;
     m_ncr_transfer_counter = 0;
     m_duart->ip2_w(true);
 }
@@ -195,15 +201,18 @@ bool vme_pme6822_card_device::ncr_int_cache_valid() const
 
 u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 {
-    if (m_ncr_dma_r_queue.size() == 0) {
+    if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
         return 0;
     }
 
-    u8 data = m_ncr_dma_r_queue.front();
-    m_ncr_dma_r_queue.pop();
-    size_t size = m_ncr_dma_r_queue.size();
-    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x queue size=%d\n", offset, data, size);
-    if (size == 0) {
+    u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
+    m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
+    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x heads W=%4d R=%4d\n",
+        offset,
+        data, 
+        m_ncr_dma_write_head, 
+        m_ncr_dma_read_head);
+    if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
         m_duart->ip2_w(true);
     }
     return data;
@@ -212,13 +221,14 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
 {
     LOG("NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
-    m_ncr_dma_w_queue.push(data);
+    m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
+    m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
 
     if (m_ncr_dma_waiting)
     {
         // if the NCR was waiting for data, that's the time to make it happy
-        u8 data = m_ncr_dma_w_queue.front();
-        m_ncr_dma_w_queue.pop();
+        u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
+        m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
         m_ncr->dma_w(data);
 
         m_ncr_dma_waiting = false;
@@ -231,17 +241,22 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         return;
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
-    LOG("NCR5385: dreq(%d) queue size=%d count=%d dir=%s\n", state, m_ncr_dma_w_queue.size(), m_ncr_transfer_counter, dir_is_in ? "in" : "out");
+    LOG("NCR5385: dreq(%d) heads W=%4d R=%4d count=%d dir=%s\n",
+        state,
+        m_ncr_dma_write_head,
+        m_ncr_dma_read_head,
+        m_ncr_transfer_counter,
+        dir_is_in ? "in" : "out");
     if (!dir_is_in) {
-        if (m_ncr_dma_w_queue.empty()) {
-            // if queue is empty, just note that we're waiting
+        if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
+            // if buffer is empty, just note that we're waiting
             m_ncr_dma_waiting = true;
         } else if (state)
         {      
-            u8 data = m_ncr_dma_w_queue.front();
             // if queue is not empty, write the next byte and pop the queue
+            u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
+            m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
             m_ncr->dma_w(data);
-            m_ncr_dma_w_queue.pop();
             m_ncr_dma_waiting = false;
         }
     } else {
@@ -249,7 +264,8 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         // so we must read it all in a FIFO of ours then flush it via the scratchpad.
         // Read is asyncronous i.e. the NCR will assert DREQ for each byte.
         u8 data = m_ncr->dma_r();
-        m_ncr_dma_r_queue.push(data);
+        m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
+        m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
         m_ncr_transfer_counter--;
 
         bool transfer_in_progress = (m_ncr_transfer_counter > 0);
@@ -257,7 +273,11 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_duart->ip2_w(false);
         }
 
-        LOG("NCR5385: dreq read byte %02x queue size=%d in progress=%s\n", data, m_ncr_dma_r_queue.size(), transfer_in_progress ? "yes" : "no");
+        LOG("NCR5385: dreq read byte %02x heads W=%4d R=%4d in progress=%s\n", 
+            data, 
+            m_ncr_dma_write_head,
+            m_ncr_dma_read_head,
+            transfer_in_progress ? "yes" : "no");
     }
 }
 

@@ -50,8 +50,9 @@ private:
     int m_ncr_int_state;
 
     bool m_ncr_dma_waiting;
-    std::queue<u8> m_ncr_dma_w_queue;
-    std::queue<u8> m_ncr_dma_r_queue;
+    std::vector<u8> m_ncr_dma_buffer;
+    size_t m_ncr_dma_read_head;
+    size_t m_ncr_dma_write_head;
     // Decremented during DMA transfers.
     u32 m_ncr_transfer_counter;
     // Set every time the NCR Trasfer Counter is written.
