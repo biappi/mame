@@ -11,6 +11,12 @@
 #define FUNCNAME __PRETTY_FUNCTION__
 #endif
 
+#define LOG_GENERAL  (1U << 0)
+#define LOG_DUART    (1U << 1)
+#define LOG_NCR_REGS (1U << 2)
+#define LOG_NCR_INT  (1U << 3)
+#define LOG_NCR_DMA  (1U << 4)
+
 #define VERBOSE (LOG_GENERAL)
 #include "logmacro.h"
 
@@ -110,8 +116,6 @@ void vme_pme6822_card_device::main_map(address_map &map)
 
 void vme_pme6822_card_device::device_start()
 {
-	LOG("%s\n", FUNCNAME);
-
     save_item(NAME(m_ncr_int_cached_at));
     save_item(NAME(m_ncr_dma_waiting));
     save_item(NAME(m_ncr_dma_buffer));
@@ -150,14 +154,14 @@ void vme_pme6822_card_device::device_start()
     m_maincpu->space(AS_PROGRAM).install_read_tap(0x0801A7C4, 0x0801A7C7, "ram", 
         [this](offs_t offset, u32 &data, u32 mem_mask)
 		{
-            LOG("ugly patch offset $%08X data $%08X mask $%08X, %s\n", offset, data, mem_mask, machine().describe_context());
+            LOGMASKED(LOG_NCR_DMA, "ugly patch offset $%08X data $%08X mask $%08X, %s\n", offset, data, mem_mask, machine().describe_context());
             if ((data == 0x00ff20d4) && (mem_mask & 0x00ff0000)) {
                 // Hack in a hack: OS-9 computes module checksums so this patching shouldn't go unnoticed.
                 // But m_ncr_transfer_counter_captured is 0 at startup, this makes the byte patched to 0xff
                 // i.e. the original value.
                 data &= 0xff00ffff;
                 data |= (((m_ncr_transfer_counter_captured / 4) - 1) & 0xff) << 16;
-                LOG("patched! xfer counter %d data $%08X\n", m_ncr_transfer_counter_captured, data);
+                LOGMASKED(LOG_NCR_DMA, "patched! xfer counter %d data $%08X\n", m_ncr_transfer_counter_captured, data);
             }
         });
 }
@@ -178,7 +182,7 @@ void vme_pme6822_card_device::device_reset()
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 {
-    LOG("NCR5385: reg_r(%x), %s\n", offset, machine().describe_context());
+    LOGMASKED(LOG_NCR_REGS, "NCR5385: reg_r(%x), %s\n", offset, machine().describe_context());
     if (offset == 5)
     {
         // In register 5 of NCR 5386, the lower three bits contain the controller's own ID.
@@ -194,7 +198,7 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
-    LOG("NCR5385: reg_w(%x, %02x)\n", offset, data);
+    LOGMASKED(LOG_NCR_REGS, "NCR5385: reg_w(%x, %02x)\n", offset, data);
     if (offset >= 0xC && offset < 0xF)
     {
         // capture the Transfer Counter value; will be used for DMA.
@@ -223,7 +227,7 @@ bool vme_pme6822_card_device::ncr_int_cache_valid() const
     // Hold the cache valid for 50 microseconds: long enough to do a few reads after
     // an interrupt, short enough to avoid returning stale data for too long.
     bool valid = (now - m_ncr_int_cached_at) < attotime::from_usec(50);
-    LOG("NCR5385: ncr_int_cache_valid() cached_at=%s now=%s valid=%d state=%d\n", m_ncr_int_cached_at.as_string(), now.as_string(), valid, m_ncr_int_state);
+    LOGMASKED(LOG_NCR_INT, "NCR5385: ncr_int_cache_valid() cached_at=%s now=%s valid=%d state=%d\n", m_ncr_int_cached_at.as_string(), now.as_string(), valid, m_ncr_int_state);
     return valid; 
 }
 
@@ -235,7 +239,7 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 
     u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
     m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
-    LOG("NCR5385: dma_scratchpad_r(%x) -> %02x heads W=%4d R=%4d\n",
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_r(%x) -> %02x heads W=%4d R=%4d\n",
         offset,
         data, 
         m_ncr_dma_write_head, 
@@ -248,7 +252,7 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 
 void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
 {
-    LOG("NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
     m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
     m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
 
@@ -269,7 +273,7 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         return;
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
-    LOG("NCR5385: dreq(%d) heads W=%4d R=%4d count=%d dir=%s\n",
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq(%d) heads W=%4d R=%4d count=%d dir=%s\n",
         state,
         m_ncr_dma_write_head,
         m_ncr_dma_read_head,
@@ -301,7 +305,7 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_duart->ip2_w(false);
         }
 
-        LOG("NCR5385: dreq read byte %02x heads W=%4d R=%4d in progress=%s\n", 
+        LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x heads W=%4d R=%4d in progress=%s\n", 
             data, 
             m_ncr_dma_write_head,
             m_ncr_dma_read_head,
@@ -311,7 +315,7 @@ void vme_pme6822_card_device::ncr_dreq(int state)
 
 void vme_pme6822_card_device::duart_output(uint8_t data)
 {
-    LOG("DUART_OUTPUT: %02X %c%c%c%c%c%c%c%c\n", data, 
+    LOGMASKED(LOG_DUART, "DUART_OUTPUT: %02X %c%c%c%c%c%c%c%c\n", data, 
         (data & 0x80) ? '7' : '.',
         (data & 0x40) ? '6' : '.',
         (data & 0x20) ? '5' : '.',
