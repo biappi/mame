@@ -16,6 +16,7 @@
 #define LOG_NCR_REGS (1U << 2)
 #define LOG_NCR_INT  (1U << 3)
 #define LOG_NCR_DMA  (1U << 4)
+#define LOG_RTC      (1U << 5)
 
 #define VERBOSE (LOG_GENERAL)
 #include "logmacro.h"
@@ -95,8 +96,8 @@ void vme_pme6822_card_device::main_map(address_map &map)
     // 64KB for OS-9 kernel ROM
     map(0x00000000, 0x0000ffff).rom().region(m_eprom0_region, 0);
 
-    // 8KB for AE_CONFIG module
-    map(0x00040000, 0x00041fff).rom().region(m_eprom1_region, 0);
+    // 8KB for AE_CONFIG module, mirrored over 64KB
+    map(0x00040000, 0x0004ffff).rom().region(m_eprom1_region, 0).mirror(0x0000e000);
 
     // 8MB RAM, according to system info printed by the "mfree" command
     map(0x08000000, 0x087fffff).ram();
@@ -125,9 +126,9 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_transfer_counter_captured));
 
     // memory tap offers a tidy solution for the "phantom" rtc
-	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc",
-		[this](offs_t offset, u32 &data, u32 mem_mask)
+    auto rtc_tap = [this](offs_t offset, u32 &data, u32 mem_mask)
 		{
+            LOGMASKED(LOG_RTC, "RTC tap: offset $%08X mask $%08X, %s\n", offset, mem_mask, machine().describe_context());
 			if (ACCESSING_BITS_24_31)
 			{
 				if (m_rtc->ceo_r())
@@ -135,7 +136,9 @@ void vme_pme6822_card_device::device_start()
 				else
 					m_rtc->read(offset >> 2);
 			}
-		});
+		};
+	m_maincpu->space(AS_PROGRAM).install_read_tap(0x00041000, 0x00041fff, "rtc", rtc_tap);
+	m_maincpu->space(AS_PROGRAM).install_read_tap(0x0004f000, 0x0004ffff, "rtc", rtc_tap);
 
     // When reading/writing a sector, SCSILIB transfers 1KiB to/from NCR DMA buffer
     // instead of 512 byte (or whatever the Transfer Counter is), causing memory corruption.
