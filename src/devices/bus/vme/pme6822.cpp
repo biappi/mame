@@ -153,6 +153,7 @@ void vme_pme6822_card_device::device_reset()
     m_ncr_dma_write_head = 0;
     m_ncr_transfer_counter = 0;
     m_duart->ip2_w(true);
+    m_duart->ip3_w(false);
 }
 
 u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
@@ -293,6 +294,8 @@ void vme_pme6822_card_device::duart_output(uint8_t data)
         (data & 0x04) ? '2' : '.',
         (data & 0x02) ? '1' : '.',
         (data & 0x01) ? '0' : '.');
+
+    m_duart->ip3_w(((data & 0x04) != 0) ? ASSERT_LINE : CLEAR_LINE);
 }
 
 void vme_pme6822_card_device::duart_a_tx(int state)
