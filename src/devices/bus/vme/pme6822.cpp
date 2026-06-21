@@ -219,9 +219,6 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
         data, 
         m_ncr_dma_write_head, 
         m_ncr_dma_read_head);
-    if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
-        m_duart->ip2_w(true);
-    }
     return data;
 }
 
@@ -276,9 +273,6 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         m_ncr_transfer_counter--;
 
         bool transfer_in_progress = (m_ncr_transfer_counter > 0);
-        if (!transfer_in_progress) {
-            m_duart->ip2_w(false);
-        }
 
         LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x heads W=%4d R=%4d in progress=%s\n", 
             data, 
