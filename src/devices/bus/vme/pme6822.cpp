@@ -18,7 +18,7 @@
 #define LOG_NCR_DMA  (1U << 4)
 #define LOG_RTC      (1U << 5)
 
-#define VERBOSE (LOG_GENERAL)
+#define VERBOSE (LOG_GENERAL | LOG_NCR_DMA)
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radstone PME 68-22")
@@ -295,7 +295,8 @@ void vme_pme6822_card_device::duart_output(uint8_t data)
         (data & 0x02) ? '1' : '.',
         (data & 0x01) ? '0' : '.');
 
-    m_duart->ip3_w(((data & 0x04) != 0) ? ASSERT_LINE : CLEAR_LINE);
+    bool dma_is_read = ((data & 0x04) != 0);
+    m_duart->ip3_w(dma_is_read ? ASSERT_LINE : CLEAR_LINE);
 }
 
 void vme_pme6822_card_device::duart_a_tx(int state)
