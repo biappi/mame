@@ -211,8 +211,8 @@ bool vme_pme6822_card_device::ncr_int_cache_valid() const
 
 u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 {
-    if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
-        return 0;
+    if (m_ncr_dma_size == 0) {
+        fatalerror("reading from empty FIFO");
     }
 
     u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
@@ -228,6 +228,11 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
 {
     LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
+
+    if (m_ncr_dma_size >= NCR_DMA_BUFFER_SIZE) {
+        fatalerror("writing to full FIFO");
+    }
+
     m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
     m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
     m_ncr_dma_size++;
