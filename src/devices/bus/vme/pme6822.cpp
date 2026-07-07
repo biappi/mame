@@ -228,6 +228,8 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
         ncr_dreq(1);
     }
 
+    m_duart->ip2_w((m_ncr_dma_size == NCR_DMA_BUFFER_SIZE) ? CLEAR_LINE : ASSERT_LINE);
+
     LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_r(%x) -> %02x size=%4d\n",
         offset,
         data, 
@@ -296,6 +298,8 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_ncr_transfer_counter--;
 
             bool transfer_in_progress = (m_ncr_transfer_counter > 0);
+
+            m_duart->ip2_w((m_ncr_dma_size == NCR_DMA_BUFFER_SIZE) ? CLEAR_LINE : ASSERT_LINE);
 
             LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d in progress=%s\n", 
                 data, 
