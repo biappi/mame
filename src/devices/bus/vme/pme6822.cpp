@@ -46,7 +46,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_eprom1_region("eprom1")
     , m_ncr_int_cached_at(attotime::zero)
     , m_ncr_int_state(false)
-    , m_ncr_dma_waiting(false)
+    , m_ncr_waits_fifo_before_read(false)
     , m_ncr_dma_read_head(0)
     , m_ncr_dma_write_head(0)
     , m_ncr_transfer_counter(0)
@@ -118,7 +118,7 @@ void vme_pme6822_card_device::main_map(address_map &map)
 void vme_pme6822_card_device::device_start()
 {
     save_item(NAME(m_ncr_int_cached_at));
-    save_item(NAME(m_ncr_dma_waiting));
+    save_item(NAME(m_ncr_waits_fifo_before_read));
     save_item(NAME(m_ncr_dma_buffer));
     save_item(NAME(m_ncr_dma_read_head));
     save_item(NAME(m_ncr_dma_write_head));
@@ -146,7 +146,7 @@ void vme_pme6822_card_device::device_reset()
     LOG("%s\n", FUNCNAME);
 
     m_ncr_int_cached_at = attotime::zero;
-    m_ncr_dma_waiting = false;
+    m_ncr_waits_fifo_before_read = false;
     m_ncr_dma_buffer.clear();
     m_ncr_dma_buffer.resize(NCR_DMA_BUFFER_SIZE);
     m_ncr_dma_read_head = 0;
@@ -229,14 +229,14 @@ void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
     m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
     m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
 
-    if (m_ncr_dma_waiting)
+    if (m_ncr_waits_fifo_before_read)
     {
         // if the NCR was waiting for data, that's the time to make it happy
         u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
         m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
         m_ncr->dma_w(data);
 
-        m_ncr_dma_waiting = false;
+        m_ncr_waits_fifo_before_read = false;
     }
 }
 
@@ -255,14 +255,14 @@ void vme_pme6822_card_device::ncr_dreq(int state)
     if (!dir_is_in) {
         if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
             // if buffer is empty, just note that we're waiting
-            m_ncr_dma_waiting = true;
+            m_ncr_waits_fifo_before_read = true;
         } else if (state)
         {      
             // if queue is not empty, write the next byte and pop the queue
             u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
             m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
             m_ncr->dma_w(data);
-            m_ncr_dma_waiting = false;
+            m_ncr_waits_fifo_before_read = false;
         }
     } else {
         // the CPU may read the entire block in one go (by reading the DMA scratchpad repeatedly),

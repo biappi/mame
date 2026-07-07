@@ -49,7 +49,7 @@ private:
     attotime m_ncr_int_cached_at;
     int m_ncr_int_state;
 
-    bool m_ncr_dma_waiting;
+    bool m_ncr_waits_fifo_before_read;
     std::vector<u8> m_ncr_dma_buffer;
     size_t m_ncr_dma_read_head;
     size_t m_ncr_dma_write_head;
