@@ -18,7 +18,7 @@
 #define LOG_NCR_DMA  (1U << 4)
 #define LOG_RTC      (1U << 5)
 
-#define VERBOSE (LOG_GENERAL | LOG_NCR_DMA)
+#define VERBOSE (LOG_GENERAL)
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radstone PME 68-22")
