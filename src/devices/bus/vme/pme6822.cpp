@@ -49,6 +49,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_waits_fifo_before_read(false)
     , m_ncr_dma_read_head(0)
     , m_ncr_dma_write_head(0)
+    , m_ncr_dma_size(0)
     , m_ncr_transfer_counter(0)
     , m_ncr_transfer_counter_captured(0)
 {
@@ -122,6 +123,7 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_dma_buffer));
     save_item(NAME(m_ncr_dma_read_head));
     save_item(NAME(m_ncr_dma_write_head));
+    save_item(NAME(m_ncr_dma_size));
     save_item(NAME(m_ncr_transfer_counter));
     save_item(NAME(m_ncr_transfer_counter_captured));
 
@@ -215,11 +217,11 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
 
     u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
     m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
-    LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_r(%x) -> %02x heads W=%4d R=%4d\n",
+    m_ncr_dma_size--;
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_r(%x) -> %02x size=%4d\n",
         offset,
         data, 
-        m_ncr_dma_write_head, 
-        m_ncr_dma_read_head);
+        m_ncr_dma_size);
     return data;
 }
 
@@ -228,12 +230,14 @@ void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
     LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_w(%x, %02x)\n", offset, data);
     m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
     m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
+    m_ncr_dma_size++;
 
     if (m_ncr_waits_fifo_before_read)
     {
         // if the NCR was waiting for data, that's the time to make it happy
         u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
         m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
+        m_ncr_dma_size--;
         m_ncr->dma_w(data);
 
         m_ncr_waits_fifo_before_read = false;
@@ -246,10 +250,9 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         return;
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
-    LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq(%d) heads W=%4d R=%4d count=%d dir=%s\n",
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq(%d) size=%4d count=%d dir=%s\n",
         state,
-        m_ncr_dma_write_head,
-        m_ncr_dma_read_head,
+        m_ncr_dma_size,
         m_ncr_transfer_counter,
         dir_is_in ? "in" : "out");
     if (!dir_is_in) {
@@ -261,6 +264,7 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             // if queue is not empty, write the next byte and pop the queue
             u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
             m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
+            m_ncr_dma_size--;
             m_ncr->dma_w(data);
             m_ncr_waits_fifo_before_read = false;
         }
@@ -271,14 +275,14 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         u8 data = m_ncr->dma_r();
         m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
         m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
+        m_ncr_dma_size++;
         m_ncr_transfer_counter--;
 
         bool transfer_in_progress = (m_ncr_transfer_counter > 0);
 
-        LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x heads W=%4d R=%4d in progress=%s\n", 
+        LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d in progress=%s\n", 
             data, 
-            m_ncr_dma_write_head,
-            m_ncr_dma_read_head,
+            m_ncr_dma_size,
             transfer_in_progress ? "yes" : "no");
     }
 }

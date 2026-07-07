@@ -53,6 +53,7 @@ private:
     std::vector<u8> m_ncr_dma_buffer;
     size_t m_ncr_dma_read_head;
     size_t m_ncr_dma_write_head;
+    size_t m_ncr_dma_size;
     // Decremented during DMA transfers.
     u32 m_ncr_transfer_counter;
     // Set every time the NCR Trasfer Counter is written.
