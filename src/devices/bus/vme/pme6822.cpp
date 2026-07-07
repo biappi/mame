@@ -47,6 +47,7 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_int_cached_at(attotime::zero)
     , m_ncr_int_state(false)
     , m_ncr_waits_fifo_before_read(false)
+    , m_ncr_waits_fifo_before_write(false)
     , m_ncr_dma_read_head(0)
     , m_ncr_dma_write_head(0)
     , m_ncr_dma_size(0)
@@ -120,6 +121,7 @@ void vme_pme6822_card_device::device_start()
 {
     save_item(NAME(m_ncr_int_cached_at));
     save_item(NAME(m_ncr_waits_fifo_before_read));
+    save_item(NAME(m_ncr_waits_fifo_before_write));
     save_item(NAME(m_ncr_dma_buffer));
     save_item(NAME(m_ncr_dma_read_head));
     save_item(NAME(m_ncr_dma_write_head));
@@ -149,6 +151,7 @@ void vme_pme6822_card_device::device_reset()
 
     m_ncr_int_cached_at = attotime::zero;
     m_ncr_waits_fifo_before_read = false;
+    m_ncr_waits_fifo_before_write = false;
     m_ncr_dma_buffer.clear();
     m_ncr_dma_buffer.resize(NCR_DMA_BUFFER_SIZE);
     m_ncr_dma_read_head = 0;
@@ -218,6 +221,13 @@ u8 vme_pme6822_card_device::ncr_dma_scratchpad_r(offs_t offset)
     u8 data = m_ncr_dma_buffer[m_ncr_dma_read_head];
     m_ncr_dma_read_head = (m_ncr_dma_read_head + 1) % NCR_DMA_BUFFER_SIZE;
     m_ncr_dma_size--;
+
+    if (m_ncr_waits_fifo_before_write) {
+        // one byte is free now, the NCR can write again
+        m_ncr_waits_fifo_before_write = false;
+        ncr_dreq(1);
+    }
+
     LOGMASKED(LOG_NCR_DMA, "NCR5385: dma_scratchpad_r(%x) -> %02x size=%4d\n",
         offset,
         data, 
@@ -274,21 +284,24 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_ncr_waits_fifo_before_read = false;
         }
     } else {
-        // the CPU may read the entire block in one go (by reading the DMA scratchpad repeatedly),
-        // so we must read it all in a FIFO of ours then flush it via the scratchpad.
-        // Read is asyncronous i.e. the NCR will assert DREQ for each byte.
-        u8 data = m_ncr->dma_r();
-        m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
-        m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
-        m_ncr_dma_size++;
-        m_ncr_transfer_counter--;
+        if (m_ncr_dma_size == NCR_DMA_BUFFER_SIZE) {
+            // FIFO is full, we have to wait until the CPU reads something.
+            m_ncr_waits_fifo_before_write = true;
+            LOGMASKED(LOG_NCR_DMA, "NCR5385: waiting for FIFO to have space\n");
+        } else {
+            u8 data = m_ncr->dma_r();
+            m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
+            m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
+            m_ncr_dma_size++;
+            m_ncr_transfer_counter--;
 
-        bool transfer_in_progress = (m_ncr_transfer_counter > 0);
+            bool transfer_in_progress = (m_ncr_transfer_counter > 0);
 
-        LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d in progress=%s\n", 
-            data, 
-            m_ncr_dma_size,
-            transfer_in_progress ? "yes" : "no");
+            LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d in progress=%s\n", 
+                data, 
+                m_ncr_dma_size,
+                transfer_in_progress ? "yes" : "no");
+        }
     }
 }
 
