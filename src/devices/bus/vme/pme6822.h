@@ -55,10 +55,6 @@ private:
     size_t m_ncr_dma_read_head;
     size_t m_ncr_dma_write_head;
     size_t m_ncr_dma_size;
-    // Decremented during DMA transfers.
-    u32 m_ncr_transfer_counter;
-    // Set every time the NCR Trasfer Counter is written.
-    u32 m_ncr_transfer_counter_captured;
 
     void main_map(address_map &map) ATTR_COLD;
 

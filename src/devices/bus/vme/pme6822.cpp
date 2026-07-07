@@ -51,8 +51,6 @@ vme_pme6822_card_device::vme_pme6822_card_device(const machine_config &mconfig, 
     , m_ncr_dma_read_head(0)
     , m_ncr_dma_write_head(0)
     , m_ncr_dma_size(0)
-    , m_ncr_transfer_counter(0)
-    , m_ncr_transfer_counter_captured(0)
 {
 }
 
@@ -126,8 +124,6 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_dma_read_head));
     save_item(NAME(m_ncr_dma_write_head));
     save_item(NAME(m_ncr_dma_size));
-    save_item(NAME(m_ncr_transfer_counter));
-    save_item(NAME(m_ncr_transfer_counter_captured));
 
     // memory tap offers a tidy solution for the "phantom" rtc
     auto rtc_tap = [this](offs_t offset, u32 &data, u32 mem_mask)
@@ -156,7 +152,6 @@ void vme_pme6822_card_device::device_reset()
     m_ncr_dma_buffer.resize(NCR_DMA_BUFFER_SIZE);
     m_ncr_dma_read_head = 0;
     m_ncr_dma_write_head = 0;
-    m_ncr_transfer_counter = 0;
     m_duart->ip2_w(true);
     m_duart->ip3_w(false);
 }
@@ -180,14 +175,6 @@ u8 vme_pme6822_card_device::ncr_port_r(offs_t offset)
 void vme_pme6822_card_device::ncr_port_w(offs_t offset, u8 data)
 {
     LOGMASKED(LOG_NCR_REGS, "NCR5385: reg_w(%x, %02x)\n", offset, data);
-    if (offset >= 0xC && offset < 0xF)
-    {
-        // capture the Transfer Counter value; will be used for DMA.
-        offs_t counter_shift = (2 - (offset - 0xC)) * 8;
-        m_ncr_transfer_counter_captured &= ~(0xFF << counter_shift);
-        m_ncr_transfer_counter_captured |= (u32(data) << counter_shift);
-        m_ncr_transfer_counter = m_ncr_transfer_counter_captured;
-    }
     m_ncr->reg_w(offset, data);
 }
 
@@ -267,10 +254,9 @@ void vme_pme6822_card_device::ncr_dreq(int state)
         return;
     }
     bool dir_is_in = (m_ncr->reg_r(4) & 0x08) != 0;
-    LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq(%d) size=%4d count=%d dir=%s\n",
+    LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq(%d) size=%4d dir=%s\n",
         state,
         m_ncr_dma_size,
-        m_ncr_transfer_counter,
         dir_is_in ? "in" : "out");
     if (!dir_is_in) {
         if (m_ncr_dma_read_head == m_ncr_dma_write_head) {
@@ -295,16 +281,12 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_ncr_dma_buffer[m_ncr_dma_write_head] = data;
             m_ncr_dma_write_head = (m_ncr_dma_write_head + 1) % NCR_DMA_BUFFER_SIZE;
             m_ncr_dma_size++;
-            m_ncr_transfer_counter--;
-
-            bool transfer_in_progress = (m_ncr_transfer_counter > 0);
 
             m_duart->ip2_w((m_ncr_dma_size == NCR_DMA_BUFFER_SIZE) ? CLEAR_LINE : ASSERT_LINE);
 
-            LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d in progress=%s\n", 
+            LOGMASKED(LOG_NCR_DMA, "NCR5385: dreq read byte %02x size=%4d\n", 
                 data, 
-                m_ncr_dma_size,
-                transfer_in_progress ? "yes" : "no");
+                m_ncr_dma_size);
         }
     }
 }
