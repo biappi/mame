@@ -483,10 +483,16 @@ void nscsi_harddisk_device::scsi_command()
 		break;
 
 	case SC_WRITE_10:
+	case SC_WRITE_AND_VERIFY_10:
 		lba = get_u32be(&scsi_cmdbuf[2]);
 		blocks = get_u16be(&scsi_cmdbuf[7]);
 
-		LOG("command WRITE EXTENDED start=%08x blocks=%04x\n", lba, blocks);
+		if (scsi_cmdbuf[0] == SC_WRITE_10) {
+			LOG("command WRITE EXTENDED start=%08x blocks=%04x\n", lba, blocks);
+		} else {
+			LOG("command WRITE AND VERIFY BytChk %d\n", !!(scsi_cmdbuf[1] & 0x02));
+			// don't actually verify; assume always good
+		}
 
 		if(image->write(lba, block)) {
 			scsi_data_out(2, blocks*bytes_per_sector);
