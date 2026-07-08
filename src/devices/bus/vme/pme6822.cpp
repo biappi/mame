@@ -145,6 +145,8 @@ void vme_pme6822_card_device::device_reset()
 {
     LOG("%s\n", FUNCNAME);
 
+    m_maincpu->set_fpu_enable(true);
+
     m_ncr_int_cached_at = attotime::zero;
     m_ncr_waits_fifo_before_read = false;
     m_ncr_waits_fifo_before_write = false;
