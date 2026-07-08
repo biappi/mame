@@ -99,6 +99,9 @@ void vme_pme6822_card_device::main_map(address_map &map)
     // 8KB for AE_CONFIG module, mirrored over 64KB
     map(0x00040000, 0x0004ffff).rom().region(m_eprom1_region, 0).mirror(0x0000e000);
 
+    // just ignore writes to the RTC
+    map(0x00041000, 0x00041fff).nopw();
+
     // 8MB RAM, according to system info printed by the "mfree" command
     map(0x08000000, 0x087fffff).ram();
 
