@@ -118,7 +118,7 @@ void vme_pme6822_card_device::main_map(address_map &map)
     map(0x00030000, 0x00030003).rw(FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_r), FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_w));
 
     // VME bus window
-    map(0x04000000, 0x04ffffff).rw(FUNC(vme_pme6822_card_device::vme_debug_r), FUNC(vme_pme6822_card_device::vme_debug_w));
+    map(0x04000000, 0x04ffffff).rw(FUNC(vme_pme6822_card_device::vme_ext_r), FUNC(vme_pme6822_card_device::vme_ext_w));
 }
 
 void vme_pme6822_card_device::device_start()
@@ -256,19 +256,13 @@ void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
     }
 }
 
-u32 vme_pme6822_card_device::vme_debug_r(offs_t offset, u32 mem_mask)
+u32 vme_pme6822_card_device::vme_ext_r(offs_t offset, u32 mem_mask)
 {
-    if (!machine().side_effects_disabled())
-        LOG("pme6822 VME debug read @0x%08x mask=0x%08x\n", 0x04000000U + (offset << 2), mem_mask);
-
     return device_vme_card_interface::vme_read32<vme::AM_0d, 0x04000000>(offset, mem_mask);
 }
 
-void vme_pme6822_card_device::vme_debug_w(offs_t offset, u32 data, u32 mem_mask)
+void vme_pme6822_card_device::vme_ext_w(offs_t offset, u32 data, u32 mem_mask)
 {
-    if (!machine().side_effects_disabled())
-        LOG("pme6822 VME debug write @0x%08x mask=0x%08x data=0x%08x\n", 0x04000000U + (offset << 2), mem_mask, data);
-
     device_vme_card_interface::vme_write32<vme::AM_0d, 0x04000000>(offset, data, mem_mask);
 }
 

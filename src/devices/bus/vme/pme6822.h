@@ -67,8 +67,8 @@ private:
     void ncr_dma_scratchpad_w(offs_t offset, u8 data);
     void ncr_dreq(int state);
 
-    u32 vme_debug_r(offs_t offset, u32 mem_mask);
-    void vme_debug_w(offs_t offset, u32 data, u32 mem_mask);
+    u32 vme_ext_r(offs_t offset, u32 mem_mask);
+    void vme_ext_w(offs_t offset, u32 data, u32 mem_mask);
 
     void duart_output(uint8_t data);
     void duart_a_tx(int state);
