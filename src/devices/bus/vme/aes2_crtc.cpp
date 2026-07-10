@@ -18,10 +18,10 @@ void aesthedes2_vme_crtc_device::device_start()
 void aesthedes2_vme_crtc_device::device_add_mconfig(machine_config &config)
 {
     screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
-    screen.set_raw(14.318181_MHz_XTAL, 896, 0, 640, 290, 0, 240);
+    screen.set_raw(14_MHz_XTAL, 896, 0, 640, 290, 0, 240);
     screen.set_screen_update("crtc", FUNC(mc6845_device::screen_update));
 
-    R6545_1(config, m_crtc, 14.318181_MHz_XTAL / 8);
+    R6545_1(config, m_crtc, 14_MHz_XTAL / 8);
     m_crtc->set_screen("screen");
     m_crtc->set_show_border_area(false);
     m_crtc->set_char_width(8);
