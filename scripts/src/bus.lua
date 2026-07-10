@@ -6107,6 +6107,8 @@ if BUSES["VME"] then
 		MAME_DIR .. "src/devices/bus/vme/vme.h",
 		MAME_DIR .. "src/devices/bus/vme/vme_cards.cpp",
 		MAME_DIR .. "src/devices/bus/vme/vme_cards.h",
+		MAME_DIR .. "src/devices/bus/vme/aes2_crtc.cpp",
+		MAME_DIR .. "src/devices/bus/vme/aes2_crtc.h",
 		MAME_DIR .. "src/devices/bus/vme/cp31.cpp",
 		MAME_DIR .. "src/devices/bus/vme/cp31.h",
 		MAME_DIR .. "src/devices/bus/vme/enp10.cpp",
