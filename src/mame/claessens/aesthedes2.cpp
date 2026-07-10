@@ -36,7 +36,7 @@ public:
             card.set_eprom_regions(":os9kernel", ":ae_config_504");
             card.rs232_tx_cb().set(m_rs232_504, FUNC(rs232_port_device::write_txd));
         });
-        VME_SLOT(config, "crate5:05").option_set("aesthedes2_debug", VME_AESTHEDES2_DEBUG);
+        VME_SLOT(config, "crate5:19").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC);
         
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
     }
