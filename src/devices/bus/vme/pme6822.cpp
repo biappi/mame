@@ -117,7 +117,9 @@ void vme_pme6822_card_device::main_map(address_map &map)
     // RAM for DMA transfers with the SCSI controller
     map(0x00030000, 0x00030003).rw(FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_r), FUNC(vme_pme6822_card_device::ncr_dma_scratchpad_w));
 
-    // VME bus window
+    // VME bus window (Aesthedes looks for a ROM disk here)
+    map(0x02000000, 0x02ffffff).rw(FUNC(vme_pme6822_card_device::vme_ext_r), FUNC(vme_pme6822_card_device::vme_ext_w));
+    // VME bus window (Aesthedes looks for various I/O)
     map(0x04000000, 0x04ffffff).rw(FUNC(vme_pme6822_card_device::vme_ext_r), FUNC(vme_pme6822_card_device::vme_ext_w));
 }
 
