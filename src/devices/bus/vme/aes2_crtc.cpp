@@ -5,12 +5,12 @@ DEFINE_DEVICE_TYPE(VME_AESTHEDES2_CRTC, aesthedes2_vme_crtc_device, "aesthedes2_
 void aesthedes2_vme_crtc_device::device_start()
 {
     vme_space(vme::AM_09).install_readwrite_handler(
-        0x04ffa000, 0x04ffa0ff,
+        0x04ffa000, 0x04ffa01f,
         read32_delegate(*this, FUNC(aesthedes2_vme_crtc_device::read32)),
         write32_delegate(*this, FUNC(aesthedes2_vme_crtc_device::write32)));
 
     vme_space(vme::AM_0d).install_readwrite_handler(
-        0x04ffa000, 0x04ffa0ff,
+        0x04ffa000, 0x04ffa01f,
         read32_delegate(*this, FUNC(aesthedes2_vme_crtc_device::read32)),
         write32_delegate(*this, FUNC(aesthedes2_vme_crtc_device::write32)));
 }
@@ -50,7 +50,6 @@ void aesthedes2_vme_crtc_device::write32(address_space &space, offs_t offset, u3
     //     logerror("write @%08x mask=%08x data=%08x\n", 0x04ffa000U + (offset << 2), mem_mask, data);
 
     if (ACCESSING_BITS_16_23) {
-        logerror("addr write @%08x mask=%08x data=%08x\n", 0x04ffa000U + (offset << 2), mem_mask, data);
         m_crtc->address_w((u8)(data >> 16));
     } else if (ACCESSING_BITS_0_7) {
         m_crtc->register_w((u8)data);
