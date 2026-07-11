@@ -411,10 +411,35 @@ bool mc6845_device::parameters_are_valid(
 	uint16_t vsync_on_pos
 )
 {
-	return (horiz_pix_total > 0) && (max_visible_x < horiz_pix_total) &&
-			(vert_pix_total > 0) && (max_visible_y < vert_pix_total) &&
-			(hsync_on_pos <= horiz_pix_total) && (vsync_on_pos <= vert_pix_total) &&
-			(hsync_on_pos != hsync_off_pos);
+	if (horiz_pix_total <= 0) {
+		return false;
+	}
+
+	if (max_visible_x >= horiz_pix_total) {
+		return false;
+	}
+
+	if (vert_pix_total <= 0) {
+		return false;
+	}
+
+	if (max_visible_y >= vert_pix_total) {
+		return false;
+	}
+
+	if (hsync_on_pos > horiz_pix_total) {
+		return false;
+	}
+
+	if (vsync_on_pos > vert_pix_total) {
+		return false;
+	}
+
+	if (hsync_on_pos == hsync_off_pos) {
+		return false;
+	}
+
+	return true;
 }
 
 void mc6845_device::recompute_parameters(bool postload)
@@ -473,6 +498,7 @@ void mc6845_device::recompute_parameters(bool postload)
 		if (parameters_are_valid(horiz_pix_total, max_visible_x, vert_pix_total, max_visible_y,
 			hsync_on_pos, hsync_off_pos, vsync_on_pos))
 		{
+			LOGSETUP("recompute_parameters() have valid data\n");
 			rectangle visarea;
 
 			attotime refresh = cclks_to_attotime((m_horiz_char_total + 1) * vert_pix_total);
@@ -740,6 +766,7 @@ TIMER_CALLBACK_MEMBER(mc6845_device::handle_line_timer)
 			m_line_counter = 0;
 			m_line_address = m_disp_start_addr;
 			m_line_enable_ff = true;
+			logerror("M6845: vblank!\n");
 
 			if (m_supports_vert_sync_width)
 			{
