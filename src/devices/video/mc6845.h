@@ -221,6 +221,10 @@ protected:
 	void update_upd_adr_timer();
 	void call_on_update_address(int strobe);
 	void transparent_update();
+	bool parameters_are_valid(uint16_t horiz_pix_total, uint16_t max_visible_x,
+		uint16_t vert_pix_total, uint16_t max_visible_y,
+		uint16_t hsync_on_pos, uint16_t hsync_off_pos,
+		uint16_t vsync_on_pos);
 	void recompute_parameters(bool postload);
 	void update_counters();
 	void set_de(int state);
