@@ -47,7 +47,7 @@
 #define LOG_REGS    (1U << 2)
 #define LOG_CONF    (1U << 3)
 
-//#define VERBOSE (LOG_SETUP|LOG_CONF|LOG_REGS)
+#define VERBOSE (LOG_SETUP|LOG_CONF|LOG_REGS)
 //#define LOG_OUTPUT_FUNC osd_printf_info
 
 #include "logmacro.h"
