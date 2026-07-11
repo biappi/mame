@@ -404,6 +404,18 @@ int mc6845_device::vsync_r()
 	return m_vsync;
 }
 
+bool mc6845_device::parameters_are_valid(
+	uint16_t horiz_pix_total, uint16_t max_visible_x,
+	uint16_t vert_pix_total, uint16_t max_visible_y,
+	uint16_t hsync_on_pos, uint16_t hsync_off_pos,
+	uint16_t vsync_on_pos
+)
+{
+	return (horiz_pix_total > 0) && (max_visible_x < horiz_pix_total) &&
+			(vert_pix_total > 0) && (max_visible_y < vert_pix_total) &&
+			(hsync_on_pos <= horiz_pix_total) && (vsync_on_pos <= vert_pix_total) &&
+			(hsync_on_pos != hsync_off_pos);
+}
 
 void mc6845_device::recompute_parameters(bool postload)
 {
@@ -458,10 +470,8 @@ void mc6845_device::recompute_parameters(bool postload)
 		(hsync_off_pos != m_hsync_off_pos) || (vsync_off_pos != m_vsync_off_pos))
 	{
 		/* update the screen if we have valid data */
-		if ((horiz_pix_total > 0) && (max_visible_x < horiz_pix_total) &&
-			(vert_pix_total > 0) && (max_visible_y < vert_pix_total) &&
-			(hsync_on_pos <= horiz_pix_total) && (vsync_on_pos <= vert_pix_total) &&
-			(hsync_on_pos != hsync_off_pos))
+		if (parameters_are_valid(horiz_pix_total, max_visible_x, vert_pix_total, max_visible_y,
+			hsync_on_pos, hsync_off_pos, vsync_on_pos))
 		{
 			rectangle visarea;
 
