@@ -20,6 +20,7 @@ void aesthedes2_vme_crtc_device::device_start()
 
 void aesthedes2_vme_crtc_device::device_add_mconfig(machine_config &config)
 {
+    // most of this is copied from mame/src/devices/bus/coco/coco_wpk.cpp
     screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
     screen.set_raw(14_MHz_XTAL, 896, 0, 640, 290, 0, 240);
     screen.set_screen_update("crtc", FUNC(mc6845_device::screen_update));
