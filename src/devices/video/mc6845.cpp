@@ -42,6 +42,7 @@
 #include "mc6845.h"
 
 #include "screen.h"
+#include <inttypes.h>
 
 #define LOG_SETUP   (1U << 1)
 #define LOG_REGS    (1U << 2)
@@ -412,30 +413,37 @@ bool mc6845_device::parameters_are_valid(
 )
 {
 	if (horiz_pix_total <= 0) {
+		LOGSETUP("invalid parameters: horiz_pix_total <= 0\n");
 		return false;
 	}
 
 	if (max_visible_x >= horiz_pix_total) {
+		LOGSETUP("invalid parameters: max_visible_x >= horiz_pix_total\n");
 		return false;
 	}
 
 	if (vert_pix_total <= 0) {
+		LOGSETUP("invalid parameters: vert_pix_total <= 0\n");
 		return false;
 	}
 
 	if (max_visible_y >= vert_pix_total) {
+		LOGSETUP("invalid parameters: max_visible_y >= vert_pix_total\n");
 		return false;
 	}
 
 	if (hsync_on_pos > horiz_pix_total) {
+		LOGSETUP("invalid parameters: hsync_on_pos > horiz_pix_total\n");
 		return false;
 	}
 
 	if (vsync_on_pos > vert_pix_total) {
+		LOGSETUP("invalid parameters: vsync_on_pos > vert_pix_total\n");
 		return false;
 	}
 
 	if (hsync_on_pos == hsync_off_pos) {
+		LOGSETUP("invalid parameters: hsync_on_pos == hsync_off_pos\n");
 		return false;
 	}
 
@@ -452,10 +460,12 @@ void mc6845_device::recompute_parameters(bool postload)
 
 	/* compute the screen sizes */
 	uint16_t horiz_pix_total = (m_horiz_char_total + 1) * m_hpixels_per_column;
+	LOGSETUP("horiz_pix_total: %d = (%d + 1) * %d\n", horiz_pix_total, m_horiz_char_total, m_hpixels_per_column);
 	uint16_t vert_pix_total = (m_vert_char_total + 1) * video_char_height + m_vert_total_adj;
 
 	/* determine the visible area, avoid division by 0 */
 	uint16_t max_visible_x = m_horiz_disp * m_hpixels_per_column - 1;
+	LOGSETUP("max_visible_x: %" PRIu16 " = %" PRIu16 " * %" PRIu16 " - 1\n", max_visible_x, m_horiz_disp, m_hpixels_per_column);
 	uint16_t max_visible_y = m_vert_disp * video_char_height - 1;
 
 	/* determine the syncing positions */
