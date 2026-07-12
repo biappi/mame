@@ -39,7 +39,7 @@ u32 aesthedes2_vme_crtc_device::read32(address_space &space, offs_t offset, u32 
     //     logerror("read @%08x mask=%08x\n", m_base_addr + (offset << 2), mem_mask);
 
     if (ACCESSING_BITS_16_23) {
-        return m_crtc->status_r();
+        return ((u32)m_crtc->status_r()) << 16;
     } else if (ACCESSING_BITS_0_7) {
         return m_crtc->register_r();
     } else {
