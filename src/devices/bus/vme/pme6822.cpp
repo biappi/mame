@@ -17,6 +17,7 @@
 #define LOG_NCR_INT  (1U << 3)
 #define LOG_NCR_DMA  (1U << 4)
 #define LOG_RTC      (1U << 5)
+#define LOG_VME      (1U << 6)
 
 #define VERBOSE (LOG_GENERAL)
 #include "logmacro.h"
@@ -260,7 +261,9 @@ void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
 
 u32 vme_pme6822_card_device::vme_ext_r(offs_t offset, u32 mem_mask)
 {
-    return device_vme_card_interface::vme_read32<vme::AM_0d, 0x04000000>(offset, mem_mask);
+    u32 read = device_vme_card_interface::vme_read32<vme::AM_0d, 0x04000000>(offset, mem_mask);
+    LOGMASKED(LOG_VME, "VME: read %08x mask %08x -> %08x\n", offset, mem_mask, read);
+    return read;
 }
 
 void vme_pme6822_card_device::vme_ext_w(offs_t offset, u32 data, u32 mem_mask)
