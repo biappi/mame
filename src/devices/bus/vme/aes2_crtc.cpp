@@ -29,7 +29,7 @@ void aesthedes2_vme_crtc_device::device_add_mconfig(machine_config &config)
     m_crtc->set_screen("screen");
     m_crtc->set_show_border_area(false);
     m_crtc->set_char_width(8);
-    // m_crtc->set_on_update_addr_change_callback(FUNC(coco_wpkrs_device::crtc_addr));
+    m_crtc->set_on_update_addr_change_callback(FUNC(aesthedes2_vme_crtc_device::crtc_addr));
     // m_crtc->set_update_row_callback(FUNC(coco_wpkrs_device::crtc_update_row));
 }
 
@@ -60,4 +60,10 @@ void aesthedes2_vme_crtc_device::write32(address_space &space, offs_t offset, u3
     } else {
         logerror("unknown write @%08x mask=%08x data=%08x\n", m_base_addr + (offset << 2), mem_mask, data);
     }
+}
+
+MC6845_ON_UPDATE_ADDR_CHANGED(aesthedes2_vme_crtc_device::crtc_addr)
+{
+	logerror("crtc_addr: %04x %d\n", address, strobe);
+	// m_video_addr = address;
 }
