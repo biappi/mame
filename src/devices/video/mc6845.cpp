@@ -464,7 +464,7 @@ void mc6845_device::recompute_parameters(bool postload)
 	uint16_t vert_pix_total = (m_vert_char_total + 1) * video_char_height + m_vert_total_adj;
 
 	/* determine the visible area, avoid division by 0 */
-	uint16_t max_visible_x = m_horiz_disp * m_hpixels_per_column - 1;
+	uint16_t max_visible_x = (m_horiz_disp < 1 ? 1 : m_horiz_disp) * m_hpixels_per_column - 1;
 	LOGSETUP("max_visible_x: %" PRIu16 " = %" PRIu16 " * %" PRIu16 " - 1\n", max_visible_x, m_horiz_disp, m_hpixels_per_column);
 	uint16_t max_visible_y = m_vert_disp * video_char_height - 1;
 
