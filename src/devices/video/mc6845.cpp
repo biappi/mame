@@ -466,12 +466,10 @@ void mc6845_device::recompute_parameters(bool postload)
 
 	/* compute the screen sizes */
 	uint16_t horiz_pix_total = (m_horiz_char_total + 1) * m_hpixels_per_column;
-	LOGSETUP("horiz_pix_total: %d = (%d + 1) * %d\n", horiz_pix_total, m_horiz_char_total, m_hpixels_per_column);
 	uint16_t vert_pix_total = (m_vert_char_total + 1) * video_char_height + m_vert_total_adj;
 
 	/* determine the visible area, avoid division by 0 */
 	uint16_t max_visible_x = (m_horiz_disp < 1 ? 1 : m_horiz_disp) * m_hpixels_per_column - 1;
-	LOGSETUP("max_visible_x: %" PRIu16 " = %" PRIu16 " * %" PRIu16 " - 1\n", max_visible_x, m_horiz_disp, m_hpixels_per_column);
 	uint16_t max_visible_y = m_vert_disp * video_char_height - 1;
 
 	/* determine the syncing positions */
@@ -782,7 +780,6 @@ TIMER_CALLBACK_MEMBER(mc6845_device::handle_line_timer)
 			m_line_counter = 0;
 			m_line_address = m_disp_start_addr;
 			m_line_enable_ff = true;
-			logerror("M6845: vblank!\n");
 
 			if (m_supports_vert_sync_width)
 			{
