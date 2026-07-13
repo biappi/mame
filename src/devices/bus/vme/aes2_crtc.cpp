@@ -3,7 +3,7 @@
 #define LOG_FAIL    (1U << 1)
 #define LOG_REGS    (1U << 2)
 
-#define VERBOSE (LOG_FAIL)
+#define VERBOSE (LOG_FAIL|LOG_REGS)
 
 #include "logmacro.h"
 
@@ -16,7 +16,12 @@ void aesthedes2_vme_crtc_device::device_start()
 {
     if (m_base_addr == 0)
         fatalerror("base address not set");
-        
+
+    m_video_ram.resize(0x7e8);
+
+	save_item(NAME(m_video_ram));
+	save_item(NAME(m_char_latch));
+
     vme_space(vme::AM_09).install_readwrite_handler(
         m_base_addr, m_base_addr + 0x1f,
         read32_delegate(*this, FUNC(aesthedes2_vme_crtc_device::read32)),
@@ -45,7 +50,8 @@ void aesthedes2_vme_crtc_device::device_add_mconfig(machine_config &config)
 
 u32 aesthedes2_vme_crtc_device::read32(address_space &space, offs_t offset, u32 mem_mask)
 {
-    LOGREGS("%s read @%08x mask=%08x\n", machine().describe_context(), m_base_addr + (offset << 2), mem_mask);
+    if (!ACCESSING_BITS_16_23)
+        LOGREGS("%s read @%08x mask=%08x\n", machine().describe_context(), m_base_addr + (offset << 2), mem_mask);
 
     if (ACCESSING_BITS_16_23) {
         return ((u32)m_crtc->status_r()) << 16;
@@ -65,6 +71,7 @@ void aesthedes2_vme_crtc_device::write32(address_space &space, offs_t offset, u3
         m_crtc->address_w((u8)(data >> 16));
     } else if (ACCESSING_BITS_0_7) {
         m_crtc->register_w((u8)data);
+        m_char_latch = (u8)data;
     } else {
         LOGFAIL("unknown write @%08x mask=%08x data=%08x\n", m_base_addr + (offset << 2), mem_mask, data);
     }
@@ -72,6 +79,8 @@ void aesthedes2_vme_crtc_device::write32(address_space &space, offs_t offset, u3
 
 MC6845_ON_UPDATE_ADDR_CHANGED(aesthedes2_vme_crtc_device::crtc_addr)
 {
-	logerror("crtc_addr: %04x %d\n", address, strobe);
-	// m_video_addr = address;
+    int row = address / 80;
+    int column = address % 80;
+	logerror("crtc_addr: %04x (R%02d C%02d) %d\n", address, row, column, strobe);
+	m_video_ram[address] = m_char_latch;
 }

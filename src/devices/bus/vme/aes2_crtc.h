@@ -42,6 +42,9 @@ private:
 	required_device<r6545_1_device> m_crtc;
     offs_t m_base_addr;
 
+    u8 m_char_latch;
+    std::vector<u8> m_video_ram;
+
     u32 read32(address_space &space, offs_t offset, u32 mem_mask);
     void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
 
