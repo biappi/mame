@@ -205,7 +205,13 @@ uint8_t mc6845_device::register_r()
 
 void mc6845_device::register_w(uint8_t data)
 {
-	LOGREGS("%s:M6845 reg 0x%02x = 0x%02x\n", machine().describe_context(), m_register_address_latch, data);
+	if (m_register_address_latch == 0x1f) {
+		char ch = '?';
+		if (ch >= 32 && ch < 127) ch = data; 
+		LOGREGS("%s:M6845 reg 0x%02x = 0x%02x '%c'\n", machine().describe_context(), m_register_address_latch, data, ch);
+	} else {
+		LOGREGS("%s:M6845 reg 0x%02x = 0x%02x\n", machine().describe_context(), m_register_address_latch, data);
+	}
 
 	/* Omits LOGSETUP logs of cursor registers as they tend to be spammy */
 	if (m_register_address_latch < 0x0e &&
