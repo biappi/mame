@@ -772,7 +772,6 @@ TIMER_CALLBACK_MEMBER(mc6845_device::handle_line_timer)
 			m_line_counter = 0;
 			m_line_address = m_disp_start_addr;
 			m_line_enable_ff = true;
-			logerror("M6845: vblank!\n");
 
 			if (m_supports_vert_sync_width)
 			{
