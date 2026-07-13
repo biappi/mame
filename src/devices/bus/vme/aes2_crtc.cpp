@@ -4,7 +4,7 @@
 #define LOG_FAIL    (1U << 1)
 #define LOG_REGS    (1U << 2)
 
-#define VERBOSE (LOG_FAIL|LOG_REGS)
+#define VERBOSE (0)
 
 #include "logmacro.h"
 
@@ -82,7 +82,7 @@ MC6845_ON_UPDATE_ADDR_CHANGED(aesthedes2_vme_crtc_device::crtc_addr)
 {
     int row = address / 80;
     int column = address % 80;
-	logerror("crtc_addr: %04x (R%02d C%02d) %d\n", address, row, column, strobe);
+	LOGREGS("crtc_addr: %04x (R%02d C%02d) %d\n", address, row, column, strobe);
 	m_video_ram[address] = m_char_latch;
 }
 
