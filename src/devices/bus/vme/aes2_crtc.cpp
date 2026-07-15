@@ -1,4 +1,5 @@
 #include "aes2_crtc.h"
+#include "test_font_8x12.h"
 
 #define LOG_FAIL    (1U << 1)
 #define LOG_REGS    (1U << 2)
@@ -45,7 +46,7 @@ void aesthedes2_vme_crtc_device::device_add_mconfig(machine_config &config)
     m_crtc->set_show_border_area(false);
     m_crtc->set_char_width(8);
     m_crtc->set_on_update_addr_change_callback(FUNC(aesthedes2_vme_crtc_device::crtc_addr));
-    // m_crtc->set_update_row_callback(FUNC(coco_wpkrs_device::crtc_update_row));
+    m_crtc->set_update_row_callback(FUNC(aesthedes2_vme_crtc_device::crtc_update_row));
 }
 
 u32 aesthedes2_vme_crtc_device::read32(address_space &space, offs_t offset, u32 mem_mask)
@@ -83,4 +84,37 @@ MC6845_ON_UPDATE_ADDR_CHANGED(aesthedes2_vme_crtc_device::crtc_addr)
     int column = address % 80;
 	logerror("crtc_addr: %04x (R%02d C%02d) %d\n", address, row, column, strobe);
 	m_video_ram[address] = m_char_latch;
+}
+
+MC6845_UPDATE_ROW(aesthedes2_vme_crtc_device::crtc_update_row)
+{
+    // printf("ma=%4x ra=%3d y=%3d x_count=%2d cursor_x=%2d de=2%d hbp=3%d vbp=2%d  -- ",
+    //      ma, ra, y, x_count, cursor_x, de, hbp, vbp);
+
+    // for (int i = 0; i < x_count; i++)
+    //     printf("%c", m_video_ram[ma + i]);
+
+    // printf("\n");
+
+    u32 *p = &bitmap.pix(y);
+
+    for (int i = 0; i < x_count; i++)
+    {
+        rgb_t fg = rgb_t::white();
+		rgb_t bg = rgb_t::black();
+
+        auto ch = m_video_ram[ma + i];
+        u8 data = 0x00;
+
+        if (ch >= 0x20 && ch < 0x7e) {
+            data = test_font_8x12[ch - 0x20][ra];
+        } else {
+            data = (ra & 1) ? 0x55 : 0xaa;
+        }
+
+        for (int j = 0; j < 8; j++)
+        {
+            *p++ = BIT(data, 7-j) ? fg : bg;
+        }
+    }
 }
