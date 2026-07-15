@@ -49,5 +49,6 @@ private:
     void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
 
 	MC6845_ON_UPDATE_ADDR_CHANGED(crtc_addr);
+	MC6845_UPDATE_ROW(crtc_update_row);
 };
 
