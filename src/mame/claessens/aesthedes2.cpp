@@ -37,14 +37,17 @@ public:
             card.rs232_tx_cb().set(m_rs232_504, FUNC(rs232_port_device::write_txd));
         });
         VME_SLOT(config, "crate5:18").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
+            (this);
             auto &card = downcast<aesthedes2_vme_crtc_device &>(*dev);
             card.set_base_address(0x04ffa000);
         });
         VME_SLOT(config, "crate5:19").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
+            (this);
             auto &card = downcast<aesthedes2_vme_crtc_device &>(*dev);
             card.set_base_address(0x04ffa020);
         });
         VME_SLOT(config, "crate5:20").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
+            (this);
             auto &card = downcast<aesthedes2_vme_crtc_device &>(*dev);
             card.set_base_address(0x04ffa040);
         });

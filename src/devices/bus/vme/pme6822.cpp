@@ -130,9 +130,9 @@ void vme_pme6822_card_device::device_start()
     save_item(NAME(m_ncr_waits_fifo_before_read));
     save_item(NAME(m_ncr_waits_fifo_before_write));
     save_item(NAME(m_ncr_dma_buffer));
-    save_item(NAME(m_ncr_dma_read_head));
-    save_item(NAME(m_ncr_dma_write_head));
-    save_item(NAME(m_ncr_dma_size));
+    // save_item(NAME(m_ncr_dma_read_head));
+    // save_item(NAME(m_ncr_dma_write_head));
+    // save_item(NAME(m_ncr_dma_size));
 
     // memory tap offers a tidy solution for the "phantom" rtc
     auto rtc_tap = [this](offs_t offset, u32 &data, u32 mem_mask)
