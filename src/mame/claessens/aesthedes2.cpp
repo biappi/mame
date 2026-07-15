@@ -6,6 +6,8 @@
 #include "bus/rs232/rs232.h"
 #include "bus/vme/aes2_crtc.h"
 
+#include "aesthedes2.lh"
+
 namespace {
 
 static DEVICE_INPUT_DEFAULTS_START(terminal_504)
@@ -54,6 +56,8 @@ public:
         
         m_rs232_504->rxd_handler().set("crate5:04:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
+
+        config.set_default_layout(layout_aesthedes2);
     }
 
 private:
