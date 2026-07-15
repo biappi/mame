@@ -52,6 +52,7 @@ public:
             card.set_base_address(0x04ffa040);
         });
         
+        m_rs232_504->rxd_handler().set("crate5:04:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
     }
 
