@@ -26,6 +26,7 @@ public:
     void set_eprom_regions(const char *eprom0, const char *eprom1);
 
     auto rs232_tx_cb() { return m_duart_a_tx.bind(); }
+    void rs232_rxd_w(int state) { m_duart->rx_a_w(state); }
     
 protected:
     // device_t overrides
