@@ -5,6 +5,7 @@
 #include "bus/vme/pme6822.h"
 #include "bus/rs232/rs232.h"
 #include "bus/vme/aes2_crtc.h"
+#include "bus/vme/aes2_microsys.h"
 
 #include "aesthedes2.lh"
 
@@ -51,6 +52,13 @@ public:
             auto &card = downcast<vme_pme6822_card_device &>(*dev);
             card.set_eprom_regions(":os9kernel", ":ae_config_302");
             card.rs232_tx_cb().set(m_rs232_302, FUNC(rs232_port_device::write_txd));
+        });
+
+        // TODO: crate name
+        VME_SLOT(config, "crate3:03").option_set("aesthedes2_microsys",VME_AES2_MICROSYS ).machine_config([this](device_t *dev) {
+            (this);
+            auto &card = downcast<aesthedes2_vme_microsys_device &>(*dev);
+            card.set_base_address(0x04f11000);
         });
 
         m_rs232_302->rxd_handler().set("crate3:02:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
