@@ -26,7 +26,7 @@ DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radst
 
 namespace {
 
-static size_t NCR_DMA_BUFFER_SIZE = 1024;
+static size_t NCR_DMA_BUFFER_SIZE = 1024 * 1024;
 
 static void scsi_devices(device_slot_interface &device)
 {
