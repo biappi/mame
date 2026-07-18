@@ -26,7 +26,7 @@ DEFINE_DEVICE_TYPE(VME_PME6822,   vme_pme6822_card_device,   "pme6822",   "Radst
 
 namespace {
 
-static size_t NCR_DMA_BUFFER_SIZE = 1024 * 1024;
+static size_t NCR_DMA_BUFFER_SIZE = 1024;
 
 static void scsi_devices(device_slot_interface &device)
 {
@@ -257,6 +257,8 @@ void vme_pme6822_card_device::ncr_dma_scratchpad_w(offs_t offset, u8 data)
 
         m_ncr_waits_fifo_before_read = false;
     }
+
+    m_duart->ip3_w((m_ncr_dma_size == 0) ? CLEAR_LINE : ASSERT_LINE);
 }
 
 u32 vme_pme6822_card_device::vme_ext_r(offs_t offset, u32 mem_mask)
@@ -293,6 +295,8 @@ void vme_pme6822_card_device::ncr_dreq(int state)
             m_ncr_dma_size--;
             m_ncr->dma_w(data);
             m_ncr_waits_fifo_before_read = false;
+
+            m_duart->ip3_w((m_ncr_dma_size == 0) ? CLEAR_LINE : ASSERT_LINE);
         }
     } else {
         if (m_ncr_dma_size == NCR_DMA_BUFFER_SIZE) {
@@ -327,7 +331,11 @@ void vme_pme6822_card_device::duart_output(uint8_t data)
         (data & 0x01) ? '0' : '.');
 
     bool dma_is_read = ((data & 0x04) != 0);
-    m_duart->ip3_w(dma_is_read ? ASSERT_LINE : CLEAR_LINE);
+    if (dma_is_read) {
+        m_duart->ip3_w(dma_is_read);
+    } else {
+        m_duart->ip3_w((m_ncr_dma_size == 0) ? CLEAR_LINE : ASSERT_LINE);
+    }
 }
 
 void vme_pme6822_card_device::duart_a_tx(int state)
