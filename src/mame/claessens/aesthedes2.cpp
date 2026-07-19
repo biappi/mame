@@ -9,6 +9,12 @@
 
 #include "aesthedes2.lh"
 
+// Selectively enable parts of the system. Good to troubleshoot/investigate/debug.
+// Crate 3 and 5 will require each an hard disk. You may need to adjust the command line
+// (-harddisk / -harddisk1 / -harddisk2) to make it work.
+#define ENABLE_CRATE_3 1
+#define ENABLE_CRATE_5 1
+
 namespace {
 
 
@@ -45,7 +51,7 @@ public:
         RS232_PORT(config, m_rs232_302, default_rs232_devices, "terminal");
         RS232_PORT(config, m_rs232_504, default_rs232_devices, "terminal");
 
-        // Crate 3
+#if ENABLE_CRATE_3
 
         VME(config, "crate3");
         VME_SLOT(config, "crate3:02").option_set("pme6822", VME_PME6822).machine_config([this](device_t *dev) {
@@ -63,9 +69,10 @@ public:
 
         m_rs232_302->rxd_handler().set("crate3:02:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_302->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_302));
+#endif
 
-        // Crate 5
 
+#if ENABLE_CRATE_5
         VME(config, "crate5");
         VME_SLOT(config, "crate5:04").option_set("pme6822", VME_PME6822).machine_config([this](device_t *dev) {
             auto &card = downcast<vme_pme6822_card_device &>(*dev);
@@ -90,6 +97,7 @@ public:
 
         m_rs232_504->rxd_handler().set("crate5:04:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
+#endif
 
         config.set_default_layout(layout_aesthedes2);
     }
