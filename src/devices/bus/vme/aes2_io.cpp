@@ -30,6 +30,9 @@ void aesthedes2_vme_io_device::device_start()
 
 void aesthedes2_vme_io_device::device_add_mconfig(machine_config &config)
 {
+    PIA6821(config, m_pia_a);
+    PIA6821(config, m_pia_b);
+    PIA6821(config, m_pia_c);
 }
 
 u32 aesthedes2_vme_io_device::read32(address_space &space, offs_t offset, u32 mem_mask)
@@ -40,18 +43,29 @@ u32 aesthedes2_vme_io_device::read32(address_space &space, offs_t offset, u32 me
     }
 
     int card_offset = (offset << 1);
-    // int shift;
+    int shift;
     if (ACCESSING_BITS_16_23) {
-        // shift = 16;
+        shift = 16;
     }
     if (ACCESSING_BITS_0_7) {
         card_offset += 1;
-        // shift = 0;
+        shift = 0;
     }
 
-    LOGREGS("%s reg READ  @%02x\n", machine().describe_context(), card_offset);
+    int pia_index = (card_offset >> 2) & 0x3;
+    offs_t pia_reg = card_offset & 0x3;
+    u8 data;
+    switch (pia_index) {
+        case 0: data = m_pia_a->read_alt(pia_reg); break;
+        case 1: data = m_pia_b->read_alt(pia_reg); break;
+        case 2: data = m_pia_c->read_alt(pia_reg); break;
+        default:
+            LOGFAIL("invalid PIA index 3\n");
+            return 0;
+    }
 
-    return 0;
+    LOGREGS("%s reg READ  @%02x data=%02x\n", machine().describe_context(), card_offset, data);
+    return data << shift;
 }
 
 void aesthedes2_vme_io_device::write32(address_space &space, offs_t offset, u32 data, u32 mem_mask)
@@ -76,4 +90,15 @@ void aesthedes2_vme_io_device::write32(address_space &space, offs_t offset, u32 
     uint8_t reg_data = data >> shift;
 
     LOGREGS("%s reg WRITE @%02x data=%02x\n", machine().describe_context(), card_offset, reg_data);
+
+    int pia_index = (card_offset >> 2) & 0x3;
+    offs_t pia_reg = card_offset & 0x3;
+    switch (pia_index) {
+        case 0: m_pia_a->write_alt(pia_reg, reg_data); return;
+        case 1: m_pia_b->write_alt(pia_reg, reg_data); return;
+        case 2: m_pia_c->write_alt(pia_reg, reg_data); return;
+        default:
+            LOGFAIL("invalid PIA index 3\n");
+            return;
+    }
 }
