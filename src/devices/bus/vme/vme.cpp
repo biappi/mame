@@ -78,6 +78,9 @@
 #include "emu.h"
 #include "vme.h"
 
+#define LOG_GENERAL    (1U << 0)
+#define LOG_INCOMING   (1U << 1)
+
 #define VERBOSE 0
 #include "logmacro.h"
 
@@ -318,7 +321,7 @@ void device_vme_card_interface::set_bus(vme_bus_device &bus)
 		{
 			if (m_master)
 			{
-				LOG("vme incoming /BERR %s\n", state ? "cleared" : "asserted");
+				LOGMASKED(LOG_INCOMING, "vme incoming /BERR %s\n", state ? "cleared" : "asserted");
 				m_berr(state);
 			}
 		});
