@@ -71,6 +71,13 @@ public:
             (this);
             auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
             card.set_base_address(0x04fc9000);
+#if ENABLE_CRATE_5
+            card.connector_a().portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_pb_w));
+            card.connector_a().x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x1_w));
+            card.connector_a().x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x2_w));
+            card.connector_a().x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x19_w));
+            card.connector_a().x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x20_w));
+#endif
         });
 
         m_rs232_302->rxd_handler().set("crate3:02:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
@@ -89,6 +96,13 @@ public:
             (this);
             auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
             card.set_base_address(0x04fc9000);
+#if ENABLE_CRATE_3
+            card.connector_b().portb_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pb_w));
+            card.connector_b().x1_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x1_w));
+            card.connector_b().x2_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
+            card.connector_b().x19_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x19_w));
+            card.connector_b().x20_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x20_w));
+#endif
         });
         VME_SLOT(config, "crate5:18").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
             (this);

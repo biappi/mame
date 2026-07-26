@@ -16,8 +16,36 @@ public:
         , m_pia_a(*this, "pia_a")
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
+        , m_connector_a(*this)
+        , m_connector_b(*this)
     {
     }
+
+    class parallel_connector {
+        public:        
+            parallel_connector(device_t &owner)
+            : m_porta(owner), m_portb(owner)
+            , m_x1(owner), m_x2(owner)
+            , m_x19(owner), m_x20(owner)
+            {};
+        
+            auto porta_cb() { return m_porta.bind(); }
+            auto portb_cb() { return m_portb.bind(); }
+            auto x1_cb() { return m_x1.bind(); }
+            auto x2_cb() { return m_x2.bind(); }
+            auto x19_cb() { return m_x19.bind(); }
+            auto x20_cb() { return m_x20.bind(); }
+
+        private:
+            devcb_write8 m_porta;
+            devcb_write8 m_portb;
+            devcb_write_line m_x1;
+            devcb_write_line m_x2;
+            devcb_write_line m_x19;
+            devcb_write_line m_x20;
+
+            friend class aesthedes2_vme_io_device;
+    };
 
     void set_base_address(offs_t addr)
     {
@@ -27,7 +55,22 @@ public:
         m_base_addr = addr;
     }
 
-    protected:
+    auto &connector_a() { return m_connector_a; }
+    auto &connector_b() { return m_connector_b; }
+    void connector_a_pa_w(u8 data) { m_pia_a->porta_w(data); }
+    void connector_a_pb_w(u8 data) { m_pia_a->portb_w(data); }
+    void connector_a_x1_w(int state) { m_pia_a->cb2_w(state); }
+    void connector_a_x2_w(int state) { m_pia_a->ca1_w(state); }
+    void connector_a_x19_w(int state) { m_pia_a->cb1_w(state); }
+    void connector_a_x20_w(int state) { m_pia_a->ca2_w(state); }
+    void connector_b_pa_w(u8 data) { m_pia_b->porta_w(data); }
+    void connector_b_pb_w(u8 data) { m_pia_b->portb_w(data); }
+    void connector_b_x1_w(int state) { m_pia_b->cb2_w(state); }
+    void connector_b_x2_w(int state) { m_pia_b->ca1_w(state); }
+    void connector_b_x19_w(int state) { m_pia_b->cb1_w(state); }
+    void connector_b_x20_w(int state) { m_pia_b->ca2_w(state); }
+
+protected:
     virtual void device_start() override ATTR_COLD;
     virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
 
@@ -36,6 +79,9 @@ private:
     required_device<pia6821_device> m_pia_a;
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
+
+    parallel_connector m_connector_a;
+    parallel_connector m_connector_b;
 
     u32 read32(address_space &space, offs_t offset, u32 mem_mask);
     void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
