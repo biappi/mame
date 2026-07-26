@@ -2,13 +2,15 @@
 
 #define LOG_FAIL    (1U << 1)
 #define LOG_REGS    (1U << 2)
+#define LOG_IO      (1U << 3)
 
-#define VERBOSE (LOG_FAIL|LOG_REGS)
+#define VERBOSE (LOG_FAIL|LOG_REGS|LOG_IO)
 
 #include "logmacro.h"
 
 #define LOGFAIL(...)    LOGMASKED(LOG_FAIL,  __VA_ARGS__)
 #define LOGREGS(...)    LOGMASKED(LOG_REGS,  __VA_ARGS__)
+#define LOGIO(...)      LOGMASKED(LOG_IO, __VA_ARGS__)
 
 DEFINE_DEVICE_TYPE(VME_AESTHEDES2_IO, aesthedes2_vme_io_device, "aesthedes2_io", "Aesthedes2 VME I/O");
 
@@ -33,6 +35,25 @@ void aesthedes2_vme_io_device::device_add_mconfig(machine_config &config)
     PIA6821(config, m_pia_a);
     PIA6821(config, m_pia_b);
     PIA6821(config, m_pia_c);
+
+    m_pia_a->ca2_handler().set([this](int state){
+        LOGIO("PIA A write CA2: %d\n", state);
+    });
+    m_pia_a->cb2_handler().set([this](int state){
+        LOGIO("PIA A write CB2: %d\n", state);
+    });
+    m_pia_a->writepb_handler().set([this](u8 data){
+        LOGIO("PIA A write PB: 0x%02x\n", data);
+    });
+    m_pia_b->ca2_handler().set([this](int state){
+        LOGIO("PIA B write CA2: %d\n", state);
+    });
+    m_pia_b->cb2_handler().set([this](int state){
+        LOGIO("PIA B write CB2: %d\n", state);
+    });
+    m_pia_b->writepb_handler().set([this](u8 data){
+        LOGIO("PIA B write PB: 0x%02x\n", data);
+    });
 }
 
 u32 aesthedes2_vme_io_device::read32(address_space &space, offs_t offset, u32 mem_mask)
