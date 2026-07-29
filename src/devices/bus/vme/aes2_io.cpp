@@ -4,7 +4,7 @@
 #define LOG_REGS    (1U << 2)
 #define LOG_IO      (1U << 3)
 
-#define VERBOSE (LOG_FAIL|LOG_REGS|LOG_IO)
+#define VERBOSE (0)
 
 #include "logmacro.h"
 
