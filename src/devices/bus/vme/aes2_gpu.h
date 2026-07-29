@@ -3,13 +3,13 @@
 #include "bus/vme/vme.h"
 #include "bus/vme/vme_cards.h"
 
-DECLARE_DEVICE_TYPE(VME_AES2_DISPSYS, aesthedes2_vme_dispsys_device);
+DECLARE_DEVICE_TYPE(VME_AES2_GPU, aesthedes2_vme_gpu_device);
 
-class aesthedes2_vme_dispsys_device : public device_t, public device_vme_card_interface
+class aesthedes2_vme_gpu_device : public device_t, public device_vme_card_interface
 {
 public:
-    aesthedes2_vme_dispsys_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
-        : device_t(mconfig, VME_AES2_DISPSYS, tag, owner, clock)
+    aesthedes2_vme_gpu_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
+        : device_t(mconfig, VME_AES2_GPU, tag, owner, clock)
         , device_vme_card_interface(mconfig, *this)
         , m_base_addr(0)
     {
