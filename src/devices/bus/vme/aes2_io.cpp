@@ -44,6 +44,10 @@ void aesthedes2_vme_io_device::device_add_mconfig(machine_config &config)
         LOGIO("PIA A write CB2: %d\n", state);
         m_connector_a.m_x1(state);
     });
+    m_pia_a->writepa_handler().set([this](u8 data){
+        LOGIO("PIA A write PA: 0x%02x\n", data);
+        m_connector_a.m_porta(data);
+    });
     m_pia_a->writepb_handler().set([this](u8 data){
         LOGIO("PIA A write PB: 0x%02x\n", data);
         m_connector_a.m_portb(data);
@@ -56,9 +60,29 @@ void aesthedes2_vme_io_device::device_add_mconfig(machine_config &config)
         LOGIO("PIA B write CB2: %d\n", state);
         m_connector_b.m_x1(state);
     });
+    m_pia_b->writepa_handler().set([this](u8 data){
+        LOGIO("PIA A write PA: 0x%02x\n", data);
+        m_connector_b.m_porta(data);
+    });
     m_pia_b->writepb_handler().set([this](u8 data){
         LOGIO("PIA B write PB: 0x%02x\n", data);
         m_connector_b.m_portb(data);
+    });
+    m_pia_c->ca2_handler().set([this](int state){
+        LOGIO("PIA C write CA2: %d\n", state);
+        m_connector_c.m_x20(state);
+    });
+    m_pia_c->cb2_handler().set([this](int state){
+        LOGIO("PIA C write CB2: %d\n", state);
+        m_connector_c.m_x1(state);
+    });
+    m_pia_c->writepa_handler().set([this](u8 data){
+        LOGIO("PIA C write PA: 0x%02x\n", data);
+        m_connector_c.m_porta(data);
+    });
+    m_pia_c->writepb_handler().set([this](u8 data){
+        LOGIO("PIA C write PB: 0x%02x\n", data);
+        m_connector_c.m_portb(data);
     });
 }
 

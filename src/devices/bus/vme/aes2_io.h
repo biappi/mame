@@ -18,6 +18,7 @@ public:
         , m_pia_c(*this, "pia_c")
         , m_connector_a(*this)
         , m_connector_b(*this)
+        , m_connector_c(*this)
     {
     }
 
@@ -82,6 +83,7 @@ private:
 
     parallel_connector m_connector_a;
     parallel_connector m_connector_b;
+    parallel_connector m_connector_c;
 
     u32 read32(address_space &space, offs_t offset, u32 mem_mask);
     void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
