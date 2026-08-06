@@ -106,6 +106,11 @@ public:
             card.connector_b().x20_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x19_w));
 #endif
         });
+        VME_SLOT(config, "crate5:17").option_set("aesthedes2_io", VME_AESTHEDES2_IO).machine_config([this](device_t *dev) {
+            (this);
+            auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
+            card.set_base_address(0x04fc9020);
+        });
         VME_SLOT(config, "crate5:18").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
             (this);
             auto &card = downcast<aesthedes2_vme_crtc_device &>(*dev);
