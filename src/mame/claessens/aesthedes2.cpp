@@ -8,6 +8,8 @@
 #include "bus/vme/aes2_microsys.h"
 #include "bus/vme/aes2_io.h"
 
+#include "machine/aesthedes_keyboard.h"
+
 #include "aesthedes2.lh"
 
 // Selectively enable parts of the system. Good to troubleshoot/investigate/debug.
@@ -44,6 +46,7 @@ public:
         : driver_device(mconfig, type, tag)
         , m_rs232_302(*this, "rs232_302")
         , m_rs232_504(*this, "rs232_504")
+        , m_keyboard(*this, "keyboard")
     {
     }
 
@@ -129,6 +132,10 @@ public:
 
         m_rs232_504->rxd_handler().set("crate5:04:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
+
+        AES2_KEYBOARD(config, m_keyboard);
+        m_keyboard->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pa_w));
+        m_keyboard->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
 #endif
 
         config.set_default_layout(layout_aesthedes2);
@@ -137,6 +144,8 @@ public:
 private:
     required_device<rs232_port_device> m_rs232_302;
     required_device<rs232_port_device> m_rs232_504;
+
+    required_device<aesthedes_keyboard_device> m_keyboard;
 };
 
 static INPUT_PORTS_START(aesthedes2)

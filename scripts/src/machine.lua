@@ -5503,3 +5503,16 @@ if MACHINES["QUADMOUSE"] then
 		MAME_DIR .. "src/devices/machine/quadmouse.h",
 	}
 end
+
+
+---------------------------------------------------
+--
+--@src/devices/machine/aesthedes_keyboard.h,MACHINES["AESTHEDES_KEYBOARD"] = true
+---------------------------------------------------
+
+if MACHINES["AESTHEDES_KEYBOARD"] then
+	files {
+		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.cpp",
+		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.h",
+	}
+end
