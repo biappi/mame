@@ -15,11 +15,14 @@ public:
     auto porta_cb() { return m_out_a_port_func.bind(); }
 
 	virtual void device_start() override ATTR_COLD;
+	virtual void device_reset() override ATTR_COLD;
 
 private:
     devcb_write_line m_out_a_strobe_func;
     devcb_write8 m_out_a_port_func;
 
+    TIMER_CALLBACK_MEMBER(fake_keystrokes);
+    emu_timer *m_fake_keystrokes_timer;
 };
 
 DECLARE_DEVICE_TYPE(AES2_KEYBOARD, aesthedes_keyboard_device)
