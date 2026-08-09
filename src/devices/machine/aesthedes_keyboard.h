@@ -23,6 +23,7 @@ private:
 
     TIMER_CALLBACK_MEMBER(fake_keystrokes);
     emu_timer *m_fake_keystrokes_timer;
+    int m_fake_keystrokes_count;
 };
 
 DECLARE_DEVICE_TYPE(AES2_KEYBOARD, aesthedes_keyboard_device)
