@@ -22,17 +22,17 @@ void aesthedes_keyboard_device::device_reset()
     m_out_a_port_func(0xff);
     m_out_a_strobe_func(1);
     m_fake_keystrokes_timer->adjust(attotime::from_msec(28800), 0, attotime::from_hz(1000));
-    m_fake_keystrokes_count = 60;
+    m_fake_keystrokes_count = 0;
 }
 
 TIMER_CALLBACK_MEMBER(aesthedes_keyboard_device::fake_keystrokes)
 {
-    m_out_a_port_func(0x55);
+    m_out_a_port_func(0xaa);
     m_out_a_strobe_func(0);
     m_out_a_strobe_func(1);
 
     m_fake_keystrokes_count--;
-    if (m_fake_keystrokes_count <= 0) {
+    if (m_fake_keystrokes_count >= 20) {
         m_fake_keystrokes_timer->enable(false);
     }
 }
