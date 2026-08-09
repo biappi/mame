@@ -5507,12 +5507,12 @@ end
 
 ---------------------------------------------------
 --
---@src/devices/machine/aesthedes_keyboard.h,MACHINES["AESTHEDES_KEYBOARD"] = true
+--@src/devices/machine/aesthedes_bitpad.h,MACHINES["AESTHEDES_BITPAD"] = true
 ---------------------------------------------------
 
-if MACHINES["AESTHEDES_KEYBOARD"] then
+if MACHINES["AESTHEDES_BITPAD"] then
 	files {
-		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.cpp",
-		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.h",
+		MAME_DIR .. "src/devices/machine/aesthedes_bitpad.cpp",
+		MAME_DIR .. "src/devices/machine/aesthedes_bitpad.h",
 	}
 end
