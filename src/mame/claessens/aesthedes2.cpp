@@ -9,6 +9,7 @@
 #include "bus/vme/aes2_io.h"
 
 #include "machine/aesthedes_bitpad.h"
+#include "machine/aesthedes_keyboard.h"
 
 #include "aesthedes2.lh"
 
@@ -47,6 +48,7 @@ public:
         , m_rs232_302(*this, "rs232_302")
         , m_rs232_504(*this, "rs232_504")
         , m_bitpad(*this, "bitpad")
+        , m_keyboard(*this, "keyboard")
     {
     }
 
@@ -136,6 +138,10 @@ public:
         AES2_BITPAD(config, m_bitpad);
         m_bitpad->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pa_w));
         m_bitpad->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
+
+        AES2_KEYBOARD(config, m_keyboard);
+        m_keyboard->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
+        m_keyboard->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
 #endif
 
         config.set_default_layout(layout_aesthedes2);
@@ -146,6 +152,7 @@ private:
     required_device<rs232_port_device> m_rs232_504;
 
     required_device<aesthedes_bitpad_device> m_bitpad;
+    required_device<aesthedes_keyboard_device> m_keyboard;
 };
 
 static INPUT_PORTS_START(aesthedes2)

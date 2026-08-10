@@ -5504,7 +5504,6 @@ if MACHINES["QUADMOUSE"] then
 	}
 end
 
-
 ---------------------------------------------------
 --
 --@src/devices/machine/aesthedes_bitpad.h,MACHINES["AESTHEDES_BITPAD"] = true
@@ -5514,5 +5513,17 @@ if MACHINES["AESTHEDES_BITPAD"] then
 	files {
 		MAME_DIR .. "src/devices/machine/aesthedes_bitpad.cpp",
 		MAME_DIR .. "src/devices/machine/aesthedes_bitpad.h",
+	}
+end
+
+---------------------------------------------------
+--
+--@src/devices/machine/aesthedes_keyboard.h,MACHINES["AESTHEDES_KEYBOARD"] = true
+---------------------------------------------------
+
+if MACHINES["AESTHEDES_BITPAD"] then
+	files {
+		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.cpp",
+		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.h",
 	}
 end

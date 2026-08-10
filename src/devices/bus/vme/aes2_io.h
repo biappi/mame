@@ -70,6 +70,12 @@ public:
     void connector_b_x2_w(int state) { m_pia_b->ca1_w(state); }
     void connector_b_x19_w(int state) { m_pia_b->cb1_w(state); }
     void connector_b_x20_w(int state) { m_pia_b->ca2_w(state); }
+    void connector_c_pa_w(u8 data) { m_pia_c->porta_w(data); }
+    void connector_c_pb_w(u8 data) { m_pia_c->portb_w(data); }
+    void connector_c_x1_w(int state) { m_pia_c->cb2_w(state); }
+    void connector_c_x2_w(int state) { m_pia_c->ca1_w(state); }
+    void connector_c_x19_w(int state) { m_pia_c->cb1_w(state); }
+    void connector_c_x20_w(int state) { m_pia_c->ca2_w(state); }
 
 protected:
     virtual void device_start() override ATTR_COLD;
