@@ -141,6 +141,7 @@ public:
 
         AES2_KEYBOARD(config, m_keyboard);
         m_keyboard->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
+        m_keyboard->portb_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pb_w));
         m_keyboard->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
 #endif
 
