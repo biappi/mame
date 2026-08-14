@@ -49,3 +49,17 @@ TIMER_CALLBACK_MEMBER(aesthedes_keyboard_device::fake_keystrokes)
         m_fake_keystrokes_timer->enable(false);
     }
 }
+
+void aesthedes_keyboard_device::leds_pa_w(u8 data) {
+    m_leds_latch = (m_leds_latch & 0x00ff) | (data << 8);
+}
+
+void aesthedes_keyboard_device::leds_pb_w(u8 data) {
+    m_leds_latch = (m_leds_latch & 0xff00) | (data);
+}
+
+void aesthedes_keyboard_device::leds_x1_w(int state) {
+    if (state == 0) {
+        LOG("LEDs: %04x\n", m_leds_latch);
+    }
+}

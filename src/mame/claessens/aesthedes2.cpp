@@ -115,6 +115,9 @@ public:
             (this);
             auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
             card.set_base_address(0x04fc9020);
+            card.connector_b().porta_cb().set(m_keyboard, FUNC(aesthedes_keyboard_device::leds_pa_w));
+            card.connector_b().portb_cb().set(m_keyboard, FUNC(aesthedes_keyboard_device::leds_pb_w));
+            card.connector_b().x1_cb().set(m_keyboard, FUNC(aesthedes_keyboard_device::leds_x1_w));
         });
         VME_SLOT(config, "crate5:18").option_set("aesthedes2_crtc", VME_AESTHEDES2_CRTC).machine_config([this](device_t *dev) {
             (this);

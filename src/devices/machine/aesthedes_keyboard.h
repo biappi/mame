@@ -15,6 +15,10 @@ public:
     auto porta_cb() { return m_out_a_port_func.bind(); }
     auto portb_cb() { return m_out_b_port_func.bind(); }
 
+    void leds_pa_w(u8 data);
+    void leds_pb_w(u8 data);
+    void leds_x1_w(int state);
+
 	virtual void device_start() override ATTR_COLD;
 	virtual void device_reset() override ATTR_COLD;
 
@@ -26,6 +30,7 @@ private:
     TIMER_CALLBACK_MEMBER(fake_keystrokes);
     emu_timer *m_fake_keystrokes_timer;
     int m_fake_keystrokes_count;
+    u16 m_leds_latch;
 };
 
 DECLARE_DEVICE_TYPE(AES2_KEYBOARD, aesthedes_keyboard_device)
