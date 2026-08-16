@@ -1,71 +1,22 @@
 static const uint16_t keycode_table[] = {
-    4, // command: 0x0d4d
-    5, // command: 0x0d51
-    8, // command: 0x0d49
-    11, // command: 0x09cc
-    12, // command: 0x09c5
-    13, // command: 0x09c6
-    14, // command: 0x09c9
-    15, // command: 0x09cb
-    18, // command: 0x0a8e
-    19, // command: 0x0a94
-    20, // command: 0x0a8d
-    21, // command: 0x0a91
-    22, // command: 0x0a92
-    23, // command: 0x0a93
-    36, // command: 0x0d4e
-    37, // command: 0x0d52
-    40, // command: 0x0d4a
-    68, // command: 0x0d4f
-    69, // command: 0x0d54
-    72, // command: 0x0d4b
-    76, // command: 0x09c7
-    77, // command: 0x09c8
-    78, // command: 0x09ca
-    82, // command: 0x0a9d
-    83, // command: 0x0a9c
-    84, // command: 0x0a97
-    85, // command: 0x0a98
-    86, // command: 0x0a9a
-    87, // command: 0x0a9e
-    100, // command: 0x0d50
-    104, // command: 0x0d4c
-    118, // command: 0x0a99
-    196, // command: 0x070f
-    197, // command: 0x0710
     198, // command: 0x0715
     199, // command: 0x0f3f
     200, // command: 0x070e
-    201, // command: 0x070d
-    202, // command: 0x070c
     203, // command: 0x070b
-    204, // command: 0x0e14
     206, // command: 0x0709
-    207, // command: 0x070a
-    208, // command: 0x0e11
     210, // command: 0x06b2
-    211, // command: 0x06a7
     212, // command: 0x0ed9
-    213, // command: 0x0edc
     215, // command: 0x06b1
-    260, // command: 0x0716
     261, // command: 0x0717
-    262, // command: 0x0713
     263, // command: 0x0f3d
-    264, // command: 0x0722
     265, // command: 0x0721
-    266, // command: 0x0720
     267, // command: 0x071f
     268, // command: 0x0e15
-    270, // command: 0x071d
     271, // command: 0x071e
     272, // command: 0x0e12
     274, // command: 0x06b3
-    275, // command: 0x06a5
     276, // command: 0x0eda
-    277, // command: 0x0edd
     279, // command: 0x06af
-    324, // command: 0x072b
     328, // command: 0x072a
     329, // command: 0x0728
     357, // command: 0x072c
