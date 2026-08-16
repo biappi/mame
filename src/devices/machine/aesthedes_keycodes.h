@@ -1,11 +1,4 @@
 static const uint16_t keycode_table[] = {
-    263, // command: 0x0f3d
-    272, // command: 0x0e12
-    357, // command: 0x072c
-    358, // command: 0x0714
-    359, // command: 0x0f3e
-    362, // command: 0x0729
-    363, // command: 0x072e
     366, // command: 0x0727
     367, // command: 0x072d
     368, // command: 0x0e13
