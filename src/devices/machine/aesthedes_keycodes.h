@@ -1,90 +1,36 @@
 static const uint16_t keycode_table[] = {
-    368, // command: 0x0e13
-    370, // command: 0x06b4
-    371, // command: 0x06a6
-    372, // command: 0x0edb
-    373, // command: 0x0ede
-    375, // command: 0x06b0
-    513, // command: 0x044d
-    514, // command: 0x044c
-    516, // command: 0x01fc
-    518, // command: 0x08a0
-    519, // command: 0x0899
-    520, // command: 0x01fb
-    521, // command: 0x01fd
-    522, // command: 0x07a5
-    523, // command: 0x01f9
-    524, // command: 0x08fd
-    525, // command: 0x08ff
-    526, // command: 0x0905
-    529, // command: 0x07df
-    530, // command: 0x07db
-    531, // command: 0x07e5
-    532, // command: 0x0dad
-    533, // command: 0x0daf
-    535, // command: 0x07d1
-    545, // command: 0x044f
-    546, // command: 0x044e
     548, // command: 0x0034
     549, // command: 0x0031
-    550, // command: 0x08a1
     551, // command: 0x089a
     552, // command: 0x0037
     553, // command: 0x0259
     554, // command: 0x01f5
     555, // command: 0x0209
-    556, // command: 0x08fe
-    557, // command: 0x0900
     558, // command: 0x0906
     561, // command: 0x07e9
-    562, // command: 0x07dd
-    563, // command: 0x07e7
-    564, // command: 0x0db0
-    565, // command: 0x0db1
-    567, // command: 0x07d2
-    577, // command: 0x0451
-    578, // command: 0x0450
     580, // command: 0x0035
     581, // command: 0x0032
     584, // command: 0x0038
     585, // command: 0x0030
-    609, // command: 0x0453
-    610, // command: 0x0452
     612, // command: 0x0036
     613, // command: 0x0033
-    614, // command: 0x089d
-    615, // command: 0x089b
     616, // command: 0x0039
     617, // command: 0x002e
     620, // command: 0x0901
     621, // command: 0x0902
-    622, // command: 0x0907
     625, // command: 0x07ea
     626, // command: 0x07de
-    627, // command: 0x07e8
-    628, // command: 0x0dae
-    629, // command: 0x0db2
-    631, // command: 0x07d3
     641, // command: 0x0455
     642, // command: 0x0454
     644, // command: 0x020a
-    646, // command: 0x089e
-    647, // command: 0x089f
     648, // command: 0x01f7
     649, // command: 0x01f8
     650, // command: 0x020b
     651, // command: 0x01fa
     652, // command: 0x0903
     653, // command: 0x0904
-    654, // command: 0x0908
-    657, // command: 0x07a2
-    658, // command: 0x07dc
-    659, // command: 0x07e6
     660, // command: 0x0db3
-    661, // command: 0x0db4
     663, // command: 0x07d4
-    673, // command: 0x0457
-    674, // command: 0x0456
     676, // command: 0x07aa
     677, // command: 0x07a3
     678, // command: 0x079a
@@ -101,8 +47,6 @@ static const uint16_t keycode_table[] = {
     692, // command: 0x0835
     694, // command: 0x0afc
     695, // command: 0x0afa
-    705, // command: 0x0459
-    706, // command: 0x0458
     708, // command: 0x07ac
     709, // command: 0x07ab
     710, // command: 0x07a0
@@ -119,8 +63,6 @@ static const uint16_t keycode_table[] = {
     724, // command: 0x0836
     725, // command: 0x083a
     726, // command: 0x0afd
-    727, // command: 0x0afb
-    737, // command: 0x045b
     738, // command: 0x045a
     740, // command: 0x0961
     741, // command: 0x0962
@@ -138,8 +80,6 @@ static const uint16_t keycode_table[] = {
     757, // command: 0x057e
     758, // command: 0x0af2
     759, // command: 0x0af4
-    769, // command: 0x045d
-    770, // command: 0x045c
     772, // command: 0x0797
     773, // command: 0x07a1
     774, // command: 0x079f
@@ -158,9 +98,7 @@ static const uint16_t keycode_table[] = {
     790, // command: 0x0af3
     791, // command: 0x0af5
     1028, // command: 0x0009
-    1029, // command: 0x00f0
     1030, // command: 0x00f3
-    1031, // command: 0x00f2
     1032, // command: 0x04f0
     1033, // command: 0x04f2
     1034, // command: 0x04fc
