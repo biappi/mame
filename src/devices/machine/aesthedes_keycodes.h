@@ -1,36 +1,6 @@
 static const uint16_t keycode_table[] = {
     548, // command: 0x0034
     549, // command: 0x0031
-    551, // command: 0x089a
-    552, // command: 0x0037
-    553, // command: 0x0259
-    554, // command: 0x01f5
-    555, // command: 0x0209
-    558, // command: 0x0906
-    561, // command: 0x07e9
-    580, // command: 0x0035
-    581, // command: 0x0032
-    584, // command: 0x0038
-    585, // command: 0x0030
-    612, // command: 0x0036
-    613, // command: 0x0033
-    616, // command: 0x0039
-    617, // command: 0x002e
-    620, // command: 0x0901
-    621, // command: 0x0902
-    625, // command: 0x07ea
-    626, // command: 0x07de
-    641, // command: 0x0455
-    642, // command: 0x0454
-    644, // command: 0x020a
-    648, // command: 0x01f7
-    649, // command: 0x01f8
-    650, // command: 0x020b
-    651, // command: 0x01fa
-    652, // command: 0x0903
-    653, // command: 0x0904
-    660, // command: 0x0db3
-    663, // command: 0x07d4
     676, // command: 0x07aa
     677, // command: 0x07a3
     678, // command: 0x079a
@@ -116,7 +86,6 @@ static const uint16_t keycode_table[] = {
     1061, // command: 0x0061
     1062, // command: 0x00f4
     1063, // command: 0x0020
-    1065, // command: 0x04f3
     1068, // command: 0x04e5
     1072, // command: 0x04dd
     1073, // command: 0x04d5
