@@ -63,7 +63,7 @@ void vme_pme6822_card_device::set_eprom_regions(const char *eprom0, const char *
 
 void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
 {
-	M68020(config, m_maincpu, 16670000);
+	M68020(config, m_maincpu, 25_MHz_XTAL);
     m_maincpu->set_addrmap(AS_PROGRAM, &vme_pme6822_card_device::main_map);
 
     MC68681(config, m_duart, 8_MHz_XTAL / 2);
