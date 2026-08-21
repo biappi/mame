@@ -1,67 +1,22 @@
 static const uint16_t keycode_table[] = {
-    548, // command: 0x0034
-    549, // command: 0x0031
-    680, // command: 0x0777
-    681, // command: 0x07a4
-    682, // command: 0x07a8
     683, // command: 0x0586
-    684, // command: 0x078b
-    685, // command: 0x077a
-    686, // command: 0x077b
-    689, // command: 0x078d
     690, // command: 0x0786
-    692, // command: 0x0835
-    694, // command: 0x0afc
     695, // command: 0x0afa
     708, // command: 0x07ac
     709, // command: 0x07ab
-    710, // command: 0x07a0
-    711, // command: 0x0795
-    712, // command: 0x0782
-    713, // command: 0x0783
-    714, // command: 0x0787
     715, // command: 0x0584
     716, // command: 0x078f
-    717, // command: 0x0778
     718, // command: 0x0779
-    721, // command: 0x078e
-    722, // command: 0x0771
-    724, // command: 0x0836
-    725, // command: 0x083a
     726, // command: 0x0afd
     727, // command: 0x0afb
     740, // command: 0x0961
-    741, // command: 0x0962
-    742, // command: 0x0770
-    743, // command: 0x0791
-    744, // command: 0x0963
-    745, // command: 0x0964
-    746, // command: 0x01f6
     747, // command: 0x0583
     748, // command: 0x076d
-    749, // command: 0x078c
-    753, // command: 0x0793
-    754, // command: 0x0785
-    756, // command: 0x0839
     757, // command: 0x057e
-    758, // command: 0x0af2
     759, // command: 0x0af4
-    772, // command: 0x0797
-    773, // command: 0x07a1
-    774, // command: 0x079f
-    775, // command: 0x0792
-    776, // command: 0x0838
-    777, // command: 0x07a6
-    778, // command: 0x0798
-    779, // command: 0x0585
-    780, // command: 0x076e
-    781, // command: 0x076f
-    782, // command: 0x0781
-    785, // command: 0x0788
     786, // command: 0x0784
     788, // command: 0x0837
     789, // command: 0x083c
-    790, // command: 0x0af3
     791, // command: 0x0af5
     1028, // command: 0x0009
     1031, // command: 0x00f2
