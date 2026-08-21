@@ -29,7 +29,7 @@ void aesthedes_keyboard_device::device_reset()
     m_out_b_port_func(0xff);
     m_out_a_strobe_func(1);
 #if DO_FAKE_KEYSTROKES
-    m_fake_keystrokes_timer->adjust(attotime::from_msec(29000), 0, attotime::from_hz(1));
+    m_fake_keystrokes_timer->adjust(attotime::from_msec(29000), 0, attotime::from_msec(1500));
 #endif
     m_fake_keystrokes_count = 0;
 }
