@@ -153,7 +153,10 @@ public:
 
 #ifdef ENABLE_CRATE_6
         VME(config, "crate6");
-        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K);
+        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([this](device_t *dev) {
+            auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
+            card.set_rom(":c100_0038_616");
+        });
 #endif
 
         config.set_default_layout(layout_aesthedes2);
@@ -181,6 +184,9 @@ ROM_START(aesthedes2)
 
     ROM_REGION32_BE(0x2000, "ae_config_302", 0)
     ROM_LOAD("ae_config_302.bin", 0x0000, 0x2000, CRC(4c618d47))
+
+    ROM_REGION16_BE(0x10000, "c100_0038_616", 0)
+    ROM_LOAD("c100_0038_616.bin", 0x0000, 0x10000, CRC(f2d3b6a2))
 ROM_END
 
 SYST(1985+, aesthedes2, 0, 0, aesthedes2, aesthedes2, aesthedes2_state, empty_init, "Claessens Product Consultants", "Aesthedes 2", MACHINE_NO_SOUND);
