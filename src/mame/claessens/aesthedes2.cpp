@@ -7,6 +7,7 @@
 #include "bus/vme/aes2_crtc.h"
 #include "bus/vme/aes2_microsys.h"
 #include "bus/vme/aes2_io.h"
+#include "bus/vme/aes2_68k.h"
 
 #include "machine/aesthedes_bitpad.h"
 #include "machine/aesthedes_keyboard.h"
@@ -18,6 +19,7 @@
 // (-harddisk / -harddisk1 / -harddisk2) to make it work.
 #define ENABLE_CRATE_3 1
 #define ENABLE_CRATE_5 1
+#define ENABLE_CRATE_6 1
 
 namespace {
 
@@ -146,6 +148,11 @@ public:
         m_keyboard->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
         m_keyboard->portb_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pb_w));
         m_keyboard->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
+#endif
+
+#ifdef ENABLE_CRATE_6
+        VME(config, "crate6");
+        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K);
 #endif
 
         config.set_default_layout(layout_aesthedes2);
