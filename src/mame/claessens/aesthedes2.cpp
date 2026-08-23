@@ -59,6 +59,9 @@ public:
         RS232_PORT(config, m_rs232_302, default_rs232_devices, "terminal");
         RS232_PORT(config, m_rs232_504, default_rs232_devices, "terminal");
 
+        AES2_BITPAD(config, m_bitpad);
+        AES2_KEYBOARD(config, m_keyboard);
+
 #if ENABLE_CRATE_3
 
         VME(config, "crate3");
@@ -140,11 +143,9 @@ public:
         m_rs232_504->rxd_handler().set("crate5:04:pme6822", FUNC(vme_pme6822_card_device::rs232_rxd_w));
         m_rs232_504->set_option_device_input_defaults("terminal", DEVICE_INPUT_DEFAULTS_NAME(terminal_504));
 
-        AES2_BITPAD(config, m_bitpad);
         m_bitpad->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pa_w));
         m_bitpad->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
 
-        AES2_KEYBOARD(config, m_keyboard);
         m_keyboard->porta_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
         m_keyboard->portb_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pb_w));
         m_keyboard->porta_strobe_cb().set("crate5:17:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
