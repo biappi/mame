@@ -11,6 +11,11 @@ void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
 {
 	M68000(config, m_cpu, 8_MHz_XTAL);
     m_cpu->set_addrmap(AS_PROGRAM, &aesthedes2_vme_68k_device::main_map);
+
+    PIA6821(config, m_pia_a);
+    PIA6821(config, m_pia_b);
+    PIA6821(config, m_pia_c);
+    PIA6821(config, m_pia_d);
 }
 
 void aesthedes2_vme_68k_device::set_rom(const char *rom_name)
@@ -20,7 +25,12 @@ void aesthedes2_vme_68k_device::set_rom(const char *rom_name)
 
 void aesthedes2_vme_68k_device::main_map(address_map &map)
 {
-    map(0x00000000, 0x00000007).rom().region(m_rom_name, 0);
-    map(0x00000008, 0x000fffff).ram();
-    map(0x00800000, 0x0080ffff).rom().region(m_rom_name, 0);
+    map(0x000000, 0x000007).rom().region(m_rom_name, 0);
+    map(0x000008, 0x0fffff).ram();
+    map(0x800000, 0x80ffff).rom().region(m_rom_name, 0);
+
+    map(0xff0000, 0xff0003).rw(m_pia_a, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+    map(0xff0004, 0xff0007).rw(m_pia_b, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+    map(0xff0008, 0xff000b).rw(m_pia_c, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+    map(0xff000c, 0xff000f).rw(m_pia_d, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
 }
