@@ -58,6 +58,7 @@ public:
 
     auto &connector_a() { return m_connector_a; }
     auto &connector_b() { return m_connector_b; }
+    auto &connector_c() { return m_connector_c; }
     void connector_a_pa_w(u8 data) { m_pia_a->porta_w(data); }
     void connector_a_pb_w(u8 data) { m_pia_a->portb_w(data); }
     void connector_a_x1_w(int state) { m_pia_a->cb2_w(state); }
