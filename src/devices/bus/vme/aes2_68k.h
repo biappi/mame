@@ -18,10 +18,29 @@ public:
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
         , m_pia_d(*this, "pia_d")
+        , m_connector_a_porta(*this)
+        , m_connector_a_portb(*this)
+        , m_connector_a_x1(*this)
+        , m_connector_a_x2(*this)
+        , m_connector_a_x19(*this)
+        , m_connector_a_x20(*this)
     {
     }
 
     void set_rom(const char *rom_name);
+
+    auto connector_a_porta_cb() { return m_connector_a_porta.bind(); };
+    auto connector_a_portb_cb() { return m_connector_a_portb.bind(); };
+    void connector_a_porta_w(u8 data) { m_pia_a->porta_w(data); } 
+    void connector_a_portb_w(u8 data) { m_pia_a->portb_w(data); } 
+    void connector_a_x1_w(int state) { m_pia_a->cb2_w(state); }
+    void connector_a_x2_w(int state) { m_pia_a->ca1_w(state); }
+    void connector_a_x19_w(int state) { m_pia_a->cb1_w(state); }
+    void connector_a_x20_w(int state) { m_pia_a->ca2_w(state); }
+    auto connector_a_x1_cb() { return m_connector_a_x1.bind(); }
+    auto connector_a_x2_cb() { return m_connector_a_x2.bind(); }
+    auto connector_a_x19_cb() { return m_connector_a_x19.bind(); }
+    auto connector_a_x20_cb() { return m_connector_a_x20.bind(); }
 
 protected:
     // device_t overrides
@@ -35,6 +54,13 @@ private:
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
     required_device<pia6821_device> m_pia_d;
+
+    devcb_write8 m_connector_a_porta;
+    devcb_write8 m_connector_a_portb;
+    devcb_write_line m_connector_a_x1;
+    devcb_write_line m_connector_a_x2;
+    devcb_write_line m_connector_a_x19;
+    devcb_write_line m_connector_a_x20;
 
     void main_map(address_map &map) ATTR_COLD;
 

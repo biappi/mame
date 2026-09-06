@@ -1,5 +1,14 @@
 #include "aes2_68k.h"
 
+#define LOG_IO      (1U << 1)
+
+#define VERBOSE (0)
+
+#include "logmacro.h"
+
+#define LOGIO(...)      LOGMASKED(LOG_IO, __VA_ARGS__)
+
+
 DEFINE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device, "aesthedes2_68k", "Aesthedes2 68k (AES C100/0038)");
 
 void aesthedes2_vme_68k_device::device_start()
@@ -13,6 +22,23 @@ void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
     m_cpu->set_addrmap(AS_PROGRAM, &aesthedes2_vme_68k_device::main_map);
 
     PIA6821(config, m_pia_a);
+    m_pia_a->ca2_handler().set([this](int state){
+        LOGIO("PIA A write CA2: %d\n", state);
+        m_connector_a_x20(state);
+    });
+    m_pia_a->cb2_handler().set([this](int state){
+        LOGIO("PIA A write CB2: %d\n", state);
+        m_connector_a_x1(state);
+    });
+    m_pia_a->writepa_handler().set([this](u8 data){
+        LOGIO("PIA A write PA: 0x%02x\n", data);
+        m_connector_a_porta(data);
+    });
+    m_pia_a->writepb_handler().set([this](u8 data){
+        LOGIO("PIA A write PB: 0x%02x\n", data);
+        m_connector_a_portb(data);
+    });
+
     PIA6821(config, m_pia_b);
     PIA6821(config, m_pia_c);
     PIA6821(config, m_pia_d);

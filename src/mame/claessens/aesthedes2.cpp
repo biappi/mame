@@ -115,6 +115,14 @@ public:
             card.connector_b().x19_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x20_w));
             card.connector_b().x20_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x19_w));
 #endif
+#if ENABLE_CRATE_6
+            // Connect to crate 6. Note: flat cable is reversed!
+            card.connector_c().portb_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_porta_w));
+            card.connector_c().x1_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x2_w));
+            card.connector_c().x2_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x1_w));
+            card.connector_c().x19_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x20_w));
+            card.connector_c().x20_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x19_w));
+#endif
         });
         VME_SLOT(config, "crate5:17").option_set("aesthedes2_io", VME_AESTHEDES2_IO).machine_config([this](device_t *dev) {
             (this);
@@ -156,6 +164,14 @@ public:
         VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([this](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
             card.set_rom(":c100_0038_616");
+#if ENABLE_CRATE_5
+            // Connect to crate 5. Note: flat cable is reversed!
+            card.connector_a_portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
+            card.connector_a_x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
+            card.connector_a_x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x1_w));
+            card.connector_a_x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x20_w));
+            card.connector_a_x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x19_w));
+#endif
         });
 #endif
 
