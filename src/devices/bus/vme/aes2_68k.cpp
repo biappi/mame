@@ -13,7 +13,15 @@ DEFINE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device, "aesthedes2_68
 
 void aesthedes2_vme_68k_device::device_start()
 {
+    m_fake_irq6_timer = timer_alloc(FUNC(aesthedes2_vme_68k_device::fake_irq6_timer), this);
+    m_clear_irq6_timer = timer_alloc(FUNC(aesthedes2_vme_68k_device::clear_irq6_timer), this);
+}
 
+void aesthedes2_vme_68k_device::device_reset()
+{
+    m_cpu_irq6(CLEAR_LINE);
+    m_clear_irq6_timer->adjust(attotime::never);
+    m_fake_irq6_timer->adjust(attotime::from_seconds(10), 0, attotime::from_hz(1));
 }
 
 void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
@@ -42,6 +50,8 @@ void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
     PIA6821(config, m_pia_b);
     PIA6821(config, m_pia_c);
     PIA6821(config, m_pia_d);
+
+    m_cpu_irq6.bind().set_inputline(m_cpu, M68K_IRQ_6);
 }
 
 void aesthedes2_vme_68k_device::set_rom(const char *rom_name)
@@ -59,4 +69,16 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
     map(0xff0004, 0xff0007).rw(m_pia_b, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff0008, 0xff000b).rw(m_pia_c, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff000c, 0xff000f).rw(m_pia_d, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+}
+
+TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::fake_irq6_timer)
+{
+    LOG("triggering fake IRQ 6\n");
+    m_cpu_irq6(ASSERT_LINE);
+    m_clear_irq6_timer->adjust(attotime::from_usec(1));
+}
+
+TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::clear_irq6_timer)
+{
+    m_cpu_irq6(CLEAR_LINE);
 }

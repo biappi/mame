@@ -24,6 +24,7 @@ public:
         , m_connector_a_x2(*this)
         , m_connector_a_x19(*this)
         , m_connector_a_x20(*this)
+        , m_cpu_irq6(*this)
     {
     }
 
@@ -45,6 +46,7 @@ public:
 protected:
     // device_t overrides
     virtual void device_start() override ATTR_COLD;
+    virtual void device_reset() override ATTR_COLD;
 
     virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
 
@@ -65,4 +67,10 @@ private:
     void main_map(address_map &map) ATTR_COLD;
 
     const char *m_rom_name;
+
+    TIMER_CALLBACK_MEMBER(fake_irq6_timer);
+    TIMER_CALLBACK_MEMBER(clear_irq6_timer);
+    emu_timer *m_fake_irq6_timer;
+    emu_timer *m_clear_irq6_timer;
+    devcb_write_line m_cpu_irq6;
 };
