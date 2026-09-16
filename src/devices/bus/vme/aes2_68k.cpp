@@ -21,7 +21,7 @@ void aesthedes2_vme_68k_device::device_reset()
 {
     m_cpu_irq6(CLEAR_LINE);
     m_clear_irq6_timer->adjust(attotime::never);
-    m_fake_irq6_timer->adjust(attotime::from_seconds(10), 0, attotime::from_hz(1));
+    m_fake_irq6_timer->adjust(attotime::zero, 0, attotime::from_hz(50));
 }
 
 void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
@@ -73,7 +73,6 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
 
 TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::fake_irq6_timer)
 {
-    LOG("triggering fake IRQ 6\n");
     m_cpu_irq6(ASSERT_LINE);
     m_clear_irq6_timer->adjust(attotime::from_usec(1));
 }
