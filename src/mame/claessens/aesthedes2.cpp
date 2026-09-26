@@ -7,6 +7,7 @@
 #include "bus/vme/aes2_crtc.h"
 #include "bus/vme/aes2_microsys.h"
 #include "bus/vme/aes2_io.h"
+#include "bus/vme/aes2_gpu.h"
 #include "bus/vme/aes2_68k.h"
 
 #include "machine/aesthedes_bitpad.h"
@@ -102,6 +103,14 @@ public:
             auto &card = downcast<vme_pme6822_card_device &>(*dev);
             card.set_eprom_regions(":os9kernel", ":ae_config_504");
             card.rs232_tx_cb().set(m_rs232_504, FUNC(rs232_port_device::write_txd));
+        });
+        VME_SLOT(config, "crate5:08").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([this](device_t *dev) {
+            auto &card = downcast<aesthedes2_vme_gpu_device &>(*dev);
+            card.set_base_address(0x04fcb000);
+        });
+        VME_SLOT(config, "crate5:13").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([this](device_t *dev) {
+            auto &card = downcast<aesthedes2_vme_gpu_device &>(*dev);
+            card.set_base_address(0x04fcb100);
         });
         VME_SLOT(config, "crate5:16").option_set("aesthedes2_io", VME_AESTHEDES2_IO).machine_config([this](device_t *dev) {
             (this);
