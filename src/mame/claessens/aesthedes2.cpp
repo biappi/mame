@@ -160,6 +160,8 @@ public:
 #endif
 
 #ifdef ENABLE_CRATE_6
+        // the actual bus is not VME (has DIN41612 2x32 connectors instead of 3x32), likely G-64 by Gespac.
+        // There is no G-64 in MAME at the time of writing, and VME should be good enough for emulation.
         VME(config, "crate6");
         VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([this](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
