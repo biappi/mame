@@ -29,7 +29,8 @@ void aesthedes2_vme_gpu_device::device_start()
 u32 aesthedes2_vme_gpu_device::read32(address_space &space, offs_t offset, u32 mem_mask)
 {
 	LOGREGS("%s read @%08x mask=%08x\n", machine().describe_context(), m_base_addr + (offset << 2), mem_mask);
-	return 0;
+    // this should make m2dispsys routines happy. May emulate an EF9365 always ready for commands.
+	return 0xffffffff;
 }
 
 void aesthedes2_vme_gpu_device::write32(address_space &space, offs_t offset, u32 data, u32 mem_mask)
