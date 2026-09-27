@@ -28,6 +28,9 @@ public:
 	virtual void device_reset() override ATTR_COLD;
 	virtual void device_stop() override ATTR_COLD;
 
+protected:
+    virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+
 private:
     devcb_write_line m_out_a_strobe_func;
     devcb_write8 m_out_a_port_func;
@@ -35,6 +38,8 @@ private:
 
     std::unique_ptr<aesthedes_keyboard_server> m_server;
     u16 m_leds_latch;
+
+    void keyboard_cb(u8 keycode);
 };
 
 DECLARE_DEVICE_TYPE(AES2_KEYBOARD, aesthedes_keyboard_device)
