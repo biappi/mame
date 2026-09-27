@@ -1236,7 +1236,10 @@ uint8_t ef9365_device::data_r(offs_t offset)
 			break;
 	}
 
-	LOG("EF9365 [ %s ] RD> [ 0x%.2X ] - %s\n", register_names[offset & 0xf], return_value, machine().describe_context());
+	// status may be read for polling so we try not to be too chatty
+	if (offset != EF936X_REG_STATUS) {
+		LOG("EF9365 [ %s ] RD> [ 0x%.2X ] - %s\n", register_names[offset & 0xf], return_value, machine().describe_context());
+	}
 
 	return return_value;
 }
