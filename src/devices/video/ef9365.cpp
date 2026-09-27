@@ -65,9 +65,11 @@
 
 #include "screen.h"
 
+#define LOG_BUSY (1U << 1)
 #define VERBOSE 0
 #include "logmacro.h"
 
+#define LOGBUSY(...) LOGMASKED(LOG_BUSY, __VA_ARGS__)
 
 namespace {
 
@@ -390,6 +392,8 @@ void ef9365_device::update_interrupts()
 TIMER_CALLBACK_MEMBER(ef9365_device::clear_busy_flag)
 {
 	m_bf = 0;
+
+	LOG("EF9365: busy flag cleared\n");
 
 	if (m_registers[EF936X_REG_CTRL1] & 0x40)
 	{
@@ -993,6 +997,8 @@ void ef9365_device::ef9365_exec(uint8_t cmd)
 		{
 			set_busy_flag(busy_cycles);
 		}
+
+		LOG("EF9365 busy cycles: %d\n", busy_cycles);
 	}
 	else
 	{
@@ -1046,6 +1052,7 @@ void ef9365_device::ef9365_exec(uint8_t cmd)
 					break;
 			}
 			set_busy_flag(busy_cycles);
+			LOG("EF9365 busy cycles: %d\n", busy_cycles);
 		}
 		else
 		{
@@ -1089,6 +1096,7 @@ void ef9365_device::ef9365_exec(uint8_t cmd)
 				}
 
 				set_busy_flag(busy_cycles);
+				LOG("EF9365 busy cycles: %d\n", busy_cycles);
 			}
 			else
 			{
@@ -1098,6 +1106,7 @@ void ef9365_device::ef9365_exec(uint8_t cmd)
 
 				int busy_cycles = draw_character(cmd - 0x20, false, false);
 				set_busy_flag(busy_cycles);
+				LOG("EF9365 busy cycles: %d\n", busy_cycles);
 			}
 		}
 	}
