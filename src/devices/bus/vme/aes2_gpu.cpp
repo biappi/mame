@@ -1,11 +1,13 @@
 #include "aes2_gpu.h"
 
-#define LOG_REGS    (1U << 1)
+#define LOG_FAIL    (1U << 1)
+#define LOG_REGS    (1U << 2)
 
-#define VERBOSE (LOG_REGS)
+#define VERBOSE (LOG_FAIL | LOG_REGS)
 
 #include "logmacro.h"
 
+#define LOGFAIL(...)    LOGMASKED(LOG_FAIL,  __VA_ARGS__)
 #define LOGREGS(...)    LOGMASKED(LOG_REGS, __VA_ARGS__)
 
 DEFINE_DEVICE_TYPE(VME_AESTHEDES2_GPU, aesthedes2_vme_gpu_device, "aesthedes2_gpu", "Aesthedes2 VME GPU");
@@ -28,12 +30,44 @@ void aesthedes2_vme_gpu_device::device_start()
 
 u32 aesthedes2_vme_gpu_device::read32(address_space &space, offs_t offset, u32 mem_mask)
 {
-	LOGREGS("%s read @%08x mask=%08x\n", machine().describe_context(), m_base_addr + (offset << 2), mem_mask);
-    // this should make m2dispsys routines happy. May emulate an EF9365 always ready for commands.
-	return 0xffffffff;
+	if (!(ACCESSING_BITS_16_23) && !(ACCESSING_BITS_0_7)) {
+		LOGFAIL("unknown read @%08x mask=%08x\n", m_base_addr + (offset << 2), mem_mask);
+        return 0;
+    }
+
+	int card_offset = (offset << 1);
+    int shift;
+    if (ACCESSING_BITS_16_23) {
+        shift = 16;
+    }
+    if (ACCESSING_BITS_0_7) {
+		card_offset += 1;
+        shift = 0;
+    }
+	
+	u8 data = 0xff;
+    LOGREGS("%s reg READ  @%02x data=%02x\n", machine().describe_context(), card_offset, data);
+	return data << shift;
 }
 
 void aesthedes2_vme_gpu_device::write32(address_space &space, offs_t offset, u32 data, u32 mem_mask)
 {
-	LOGREGS("%s write @%08x mask=%08x data=%08x\n", machine().describe_context(), m_base_addr + (offset << 2), mem_mask, data);
+    if (!(ACCESSING_BITS_16_23) && !(ACCESSING_BITS_0_7)) {
+        LOGFAIL("unknown write @%08x mask=%08x data=%08x\n", m_base_addr + (offset << 2), mem_mask, data);
+        return;
+    }
+
+    int card_offset = (offset << 1);
+    int shift;
+    if (ACCESSING_BITS_16_23) {
+        shift = 16;
+    }
+    if (ACCESSING_BITS_0_7) {
+        card_offset += 1;
+        shift = 0;
+    }
+
+    uint8_t reg_data = data >> shift;
+
+	LOGREGS("%s reg WRITE @%02x data=%02x\n", machine().describe_context(), card_offset, reg_data);
 }
