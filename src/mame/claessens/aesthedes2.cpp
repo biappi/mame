@@ -104,11 +104,11 @@ public:
             card.set_eprom_regions(":os9kernel", ":ae_config_504");
             card.rs232_tx_cb().set(m_rs232_504, FUNC(rs232_port_device::write_txd));
         });
-        VME_SLOT(config, "crate5:08").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([this](device_t *dev) {
+        VME_SLOT(config, "crate5:08").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_gpu_device &>(*dev);
             card.set_base_address(0x04fcb000);
         });
-        VME_SLOT(config, "crate5:13").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([this](device_t *dev) {
+        VME_SLOT(config, "crate5:13").option_set("aesthedes2_gpu", VME_AESTHEDES2_GPU).machine_config([](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_gpu_device &>(*dev);
             card.set_base_address(0x04fcb100);
         });
@@ -172,7 +172,7 @@ public:
         // the actual bus is not VME (has DIN41612 2x32 connectors instead of 3x32), likely G-64 by Gespac.
         // There is no G-64 in MAME at the time of writing, and VME should be good enough for emulation.
         VME(config, "crate6");
-        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([this](device_t *dev) {
+        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
             card.set_rom(":c100_0038_616");
 #if ENABLE_CRATE_5
