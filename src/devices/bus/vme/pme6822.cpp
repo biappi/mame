@@ -66,7 +66,7 @@ void vme_pme6822_card_device::device_add_mconfig(machine_config &config)
 	M68020(config, m_maincpu, 25_MHz_XTAL);
     m_maincpu->set_addrmap(AS_PROGRAM, &vme_pme6822_card_device::main_map);
 
-    MC68681(config, m_duart, 8_MHz_XTAL / 2);
+    MC68681(config, m_duart, 3.6864_MHz_XTAL);
     m_duart->set_clocks(500000, 500000, 1000000, 1000000);
     m_duart->irq_cb().set_inputline(m_maincpu, M68K_IRQ_5);
     m_duart->outport_cb().set(FUNC(vme_pme6822_card_device::duart_output));
