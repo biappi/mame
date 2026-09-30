@@ -1,13 +1,14 @@
 #include "aes2_68k.h"
 
 #define LOG_IO      (1U << 1)
+#define LOG_REGS    (1U << 2)
 
-#define VERBOSE (0)
+#define VERBOSE (LOG_IO | LOG_REGS)
 
 #include "logmacro.h"
 
 #define LOGIO(...)      LOGMASKED(LOG_IO, __VA_ARGS__)
-
+#define LOGREGS(...)    LOGMASKED(LOG_REGS, __VA_ARGS__)
 
 DEFINE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device, "aesthedes2_68k", "Aesthedes2 68k (AES C100/0038)");
 
@@ -69,6 +70,8 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
     map(0xff0004, 0xff0007).rw(m_pia_b, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff0008, 0xff000b).rw(m_pia_c, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff000c, 0xff000f).rw(m_pia_d, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+
+    map(0xffffb000, 0xffffb6ff).rw(FUNC(aesthedes2_vme_68k_device::mistery_r), FUNC(aesthedes2_vme_68k_device::mistery_w));
 }
 
 TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::fake_irq6_timer)
@@ -80,4 +83,136 @@ TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::fake_irq6_timer)
 TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::clear_irq6_timer)
 {
     m_cpu_irq6(CLEAR_LINE);
+}
+
+u16 aesthedes2_vme_68k_device::mistery_r(offs_t offset, u16 mem_mask)
+{
+    const u32 address = 0xffffb000 + (offset << 1);
+
+    // Known registers are on the low byte lane (...01).
+    if (ACCESSING_BITS_0_7)
+    {
+        switch (address + 1)
+        {
+        case 0xffffb601:
+            LOGREGS("%s: mistery read b6: status / ack register.\n", machine().describe_context());
+            return 0x0000;
+
+        default:
+            logerror("%s: unknown HW read @ %08x mask=%04x\n",
+                machine().describe_context(),
+                address + 1,
+                mem_mask);
+            break;
+        }
+    }
+
+    return 0xffff;
+}
+
+void aesthedes2_vme_68k_device::mistery_w(offs_t offset, u16 data, u16 mem_mask)
+{
+    const u32 address = 0xffffb000 + (offset << 1);
+
+    if (ACCESSING_BITS_0_7)
+    {
+        const u8 value = data & 0xff;
+
+        switch (address + 1)
+        {
+        case 0xffffb001:
+            LOGREGS("%s: mistery write b0: command/control register = %02x\n", machine().describe_context(), value);
+            m_mistery_device.m_command = value;
+            break;
+
+        case 0xffffb101:
+            // Channel / entry selector
+            LOGREGS("%s: mistery write b1: channel / entry selector = %02x\n", machine().describe_context(), value);
+            m_mistery_device.m_selector = value;
+            break;
+
+        case 0xffffb201:
+            // Unknown / not observed yet
+            logerror("%s: HW B201 write = %02x\n",
+                machine().describe_context(), value);
+            break;
+
+        case 0xffffb301:
+            // Parameter data
+            LOGREGS("%s: mistery write b3: parameter = %02x (%d)\n", machine().describe_context(), value, value);
+            switch (m_mistery_device.m_command) {
+                case 0x00:
+                    // do nothing? idle?
+                    break;
+
+                case 0x01:
+                    // set r
+                    if (m_mistery_device.m_selector < 0x40) {
+                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
+                        color = (color & 0x00ffffff) | (value << 24);
+                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                    } else {
+                        logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
+                    }
+                    break;
+
+                case 0x05:
+                    // set g
+                    if (m_mistery_device.m_selector < 0x40) {
+                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
+                        color = (color & 0xff00ffff) | (value << 16);
+                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                    } else {
+                        logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
+                    }
+                    break;
+
+                case 0x09:
+                    // set b
+                    if (m_mistery_device.m_selector < 0x40) {
+                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
+                        color = (color & 0xffff00ff) | (value << 8);
+                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                    } else {
+                        logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
+                    }
+                    break;
+
+                case 0x11:
+                case 0x15:
+                case 0x19:
+                    // commit? latch?
+                    break;
+
+            }   
+
+            LOGREGS("%s: mistery write b3: parameter = %02x (%d)\n", machine().describe_context(), value, value);
+            break;
+
+        case 0xffffb401:
+            // hw_data_port_a_w(value);
+            LOGREGS("%s: mistery write b4: streaming data port A = %02x\n", machine().describe_context(), value);
+            break;
+
+        case 0xffffb501:
+            // Streaming data port B
+            LOGREGS("%s: mistery write b5: streaming data port B = %02x\n", machine().describe_context(), value);
+            break;
+
+        case 0xffffb601:
+            // No writes observed yet
+            logerror("%s: HW B601 write = %02x\n",
+                machine().describe_context(), value);
+            break;
+
+        default:
+            logerror("%s: unknown HW write @ %08x = %02x mask=%04x\n",
+                machine().describe_context(),
+                address + 1,
+                value,
+                mem_mask);
+            break;
+        }
+    }
+
 }

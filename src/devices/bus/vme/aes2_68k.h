@@ -73,4 +73,14 @@ private:
     emu_timer *m_fake_irq6_timer;
     emu_timer *m_clear_irq6_timer;
     devcb_write_line m_cpu_irq6;
+
+    struct {
+        u32 m_palette[0x40];
+
+        u8 m_command;
+        u8 m_selector;
+    } m_mistery_device;
+
+    u16 mistery_r(offs_t offset, u16 mem_mask);
+    void mistery_w(offs_t offset, u16 data, u16 mem_mask);
 };
