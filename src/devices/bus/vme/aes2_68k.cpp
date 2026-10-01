@@ -1,6 +1,7 @@
 #include "aes2_68k.h"
 
 #define LOG_IO      (1U << 1)
+#define LOG_G64     (1U << 6)
 
 #define VERBOSE (0)
 
@@ -69,7 +70,23 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
     map(0xff0004, 0xff0007).rw(m_pia_b, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff0008, 0xff000b).rw(m_pia_c, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff000c, 0xff000f).rw(m_pia_d, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+
+    // window to other cards in backplane
+    map(0xffb000, 0xffefff).rw(FUNC(aesthedes2_vme_68k_device::g64_ext_r), FUNC(aesthedes2_vme_68k_device::g64_ext_w));
 }
+
+u16 aesthedes2_vme_68k_device::g64_ext_r(offs_t offset, u16 mem_mask)
+{
+    u16 read = device_vme_card_interface::vme_read16<vme::AM_0d, 0xffb000>(offset, mem_mask);
+    LOGMASKED(LOG_G64, "G64: read %08x mask %08x -> %08x\n", offset, mem_mask, read);
+    return read;
+}
+
+void aesthedes2_vme_68k_device::g64_ext_w(offs_t offset, u16 data, u16 mem_mask)
+{
+    device_vme_card_interface::vme_write32<vme::AM_0d, 0xffb000>(offset, data, mem_mask);
+}
+
 
 TIMER_CALLBACK_MEMBER(aesthedes2_vme_68k_device::fake_irq6_timer)
 {

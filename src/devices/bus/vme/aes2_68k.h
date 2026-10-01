@@ -1,3 +1,11 @@
+// license:BSD-3-Clause
+// copyright-holders:Enrico Gueli
+
+/*
+ * Aesthedes 68000 CPU backplane card.
+ * https://github.com/egueli/Aesthedes-notes/blob/main/hardware/cards/aes_68k/README.md
+ * 
+ */
 #include "emu.h"
 
 #include "bus/vme/vme.h"
@@ -7,6 +15,7 @@
 
 DECLARE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device);
 
+// Class name contains "vme" but the actual backplane is likely Gespac G64.
 class aesthedes2_vme_68k_device : public device_t, public device_vme_card_interface
 {
 public:
@@ -67,6 +76,9 @@ private:
     void main_map(address_map &map) ATTR_COLD;
 
     const char *m_rom_name;
+
+    u16 g64_ext_r(offs_t offset, u16 mem_mask);
+    void g64_ext_w(offs_t offset, u16 data, u16 mem_mask);
 
     TIMER_CALLBACK_MEMBER(fake_irq6_timer);
     TIMER_CALLBACK_MEMBER(clear_irq6_timer);

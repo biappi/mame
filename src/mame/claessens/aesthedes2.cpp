@@ -9,6 +9,7 @@
 #include "bus/vme/aes2_io.h"
 #include "bus/vme/aes2_gpu.h"
 #include "bus/vme/aes2_68k.h"
+#include "bus/vme/aes2_multilevel.h"
 
 #include "machine/aesthedes_bitpad.h"
 #include "machine/aesthedes_keyboard.h"
@@ -184,6 +185,7 @@ public:
             card.connector_a_x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x19_w));
 #endif
         });
+        VME_SLOT(config, "crate6:17").option_set("aesthedes2_multilevel", VME_AESTHEDES2_MULTILEVEL_GPU);
 #endif
 
         config.set_default_layout(layout_aesthedes2);
