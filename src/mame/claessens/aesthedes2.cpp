@@ -175,6 +175,7 @@ public:
         VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
             card.set_rom(":c100_0038_616");
+            card.set_palette_tag(":crate5:08:aesthedes2_gpu:palette");
 #if ENABLE_CRATE_5
             // Connect to crate 5. Note: flat cable is reversed!
             card.connector_a_portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));

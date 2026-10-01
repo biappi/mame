@@ -148,9 +148,8 @@ void aesthedes2_vme_68k_device::mistery_w(offs_t offset, u16 data, u16 mem_mask)
                 case 0x01:
                     // set r
                     if (m_mistery_device.m_selector < 0x40) {
-                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
-                        color = (color & 0x00ffffff) | (value << 24);
-                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                        rgb_t const color = m_palette->pen_color(m_mistery_device.m_selector);
+                        m_palette->set_pen_color(m_mistery_device.m_selector, value, color.g(), color.b());
                     } else {
                         logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
                     }
@@ -159,9 +158,8 @@ void aesthedes2_vme_68k_device::mistery_w(offs_t offset, u16 data, u16 mem_mask)
                 case 0x05:
                     // set g
                     if (m_mistery_device.m_selector < 0x40) {
-                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
-                        color = (color & 0xff00ffff) | (value << 16);
-                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                        rgb_t const color = m_palette->pen_color(m_mistery_device.m_selector);
+                        m_palette->set_pen_color(m_mistery_device.m_selector, color.r(), value, color.b());
                     } else {
                         logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
                     }
@@ -170,9 +168,8 @@ void aesthedes2_vme_68k_device::mistery_w(offs_t offset, u16 data, u16 mem_mask)
                 case 0x09:
                     // set b
                     if (m_mistery_device.m_selector < 0x40) {
-                        u32 color = m_mistery_device.m_palette[m_mistery_device.m_selector];
-                        color = (color & 0xffff00ff) | (value << 8);
-                        m_mistery_device.m_palette[m_mistery_device.m_selector] = color;
+                        rgb_t const color = m_palette->pen_color(m_mistery_device.m_selector);
+                        m_palette->set_pen_color(m_mistery_device.m_selector, color.r(), color.g(), value);
                     } else {
                         logerror("%s: mistery write b3: parameter = %02x (%d) out of range\n", machine().describe_context(), value, value);
                     }

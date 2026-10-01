@@ -4,6 +4,7 @@
 #include "bus/vme/vme_cards.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/6821pia.h"
+#include "emupal.h"
 
 DECLARE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device);
 
@@ -14,6 +15,7 @@ public:
         : device_t(mconfig, VME_AESTHEDES2_68K, tag, owner, clock)
         , device_vme_card_interface(mconfig, *this)
         , m_cpu(*this, "cpu")
+        , m_palette(*this, finder_base::DUMMY_TAG)
         , m_pia_a(*this, "pia_a")
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
@@ -29,6 +31,7 @@ public:
     }
 
     void set_rom(const char *rom_name);
+    void set_palette_tag(char const *tag) { m_palette.set_tag(*this, tag); }
 
     auto connector_a_porta_cb() { return m_connector_a_porta.bind(); };
     auto connector_a_portb_cb() { return m_connector_a_portb.bind(); };
@@ -52,6 +55,7 @@ protected:
 
 private:
 	required_device<m68000_device> m_cpu;
+    required_device<palette_device> m_palette;
     required_device<pia6821_device> m_pia_a;
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
@@ -75,10 +79,8 @@ private:
     devcb_write_line m_cpu_irq6;
 
     struct {
-        u32 m_palette[0x40];
-
-        u8 m_command;
-        u8 m_selector;
+        u8 m_command = 0;
+        u8 m_selector = 0;
     } m_mistery_device;
 
     u16 mistery_r(offs_t offset, u16 mem_mask);

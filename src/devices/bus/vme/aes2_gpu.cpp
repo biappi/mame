@@ -24,6 +24,7 @@ void aesthedes2_vme_gpu_device::device_add_mconfig(machine_config &config)
 	PALETTE(config, "palette").set_entries(256);
 
 	EF9365(config, m_ef9365, 14_MHz_XTAL/8);
+	m_ef9365->set_nb_bitplanes(6);
 	m_ef9365->set_screen("screen");
 	m_ef9365->set_palette_tag("palette");
 	m_ef9365->set_display_mode(ef9365_device::DISPLAY_MODE_512x512);
@@ -100,5 +101,13 @@ void aesthedes2_vme_gpu_device::write32(address_space &space, offs_t offset, u32
 	bool is_ef9365 = (card_offset < 0xC);
 	if (is_ef9365) {
 		m_ef9365->data_w(card_offset, reg_data);
+	}
+
+	if (card_offset == 0x0E) {
+		if (reg_data < 0x40) {
+			m_ef9365->set_color_filler(reg_data);
+		} else {
+			LOGFAIL("GPU maybe_color_index too high data=%02x\n", reg_data);
+		}
 	}
 }
