@@ -2,14 +2,14 @@
 <mamelayout version="2">
     <view name="Standard">
 		<!-- RS-232 of PME 68-22M @302 -->
-		<screen index="0"> <bounds x="0" y="0" width="0" height="0" /> </screen>
+		<screen index="0"> <bounds x="0" y="0" width="4" height="3" /> </screen>
 		<!-- RS-232 of PME 68-22M @504 -->
-		<screen index="1"> <bounds x="4" y="0" width="0" height="0" /> </screen>
+		<screen index="1"> <bounds x="4" y="0" width="4" height="3" /> </screen>
 		
 		<!-- Current-Level Monitor, right color screen -->
-		<screen index="2"> <bounds x="8" y="0" width="3" height="3" /> </screen>
+		<screen index="2"> <bounds x="8" y="6" width="3" height="3" /> </screen>
 		<!-- Window Monitor, left color screen -->
-		<screen index="3"> <bounds x="0" y="0" width="3" height="3" /> </screen>
+		<screen index="3"> <bounds x="0" y="6" width="3" height="3" /> </screen>
 		
 		<!-- Colour Control Display, left B/W screen -->
 		<screen index="6"> <bounds x="0" y="3" width="4" height="3" /> </screen>
