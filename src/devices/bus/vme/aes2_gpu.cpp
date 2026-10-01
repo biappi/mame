@@ -21,7 +21,7 @@ void aesthedes2_vme_gpu_device::device_add_mconfig(machine_config &config)
 	screen.set_size(512, 512);
 	screen.set_visarea(0, 512-1, 0, 512-1);
 
-	PALETTE(config, "palette").set_entries(256);
+	PALETTE(config, m_palette, palette_device::MONOCHROME_INVERTED);
 
 	EF9365(config, m_ef9365, 14_MHz_XTAL/8);
 	m_ef9365->set_screen("screen");

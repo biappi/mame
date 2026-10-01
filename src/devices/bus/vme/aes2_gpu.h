@@ -14,6 +14,7 @@ public:
 		, device_vme_card_interface(mconfig, *this)
 		, m_base_addr(0)
 		, m_ef9365(*this, "ef9365")
+		, m_palette(*this, "palette")
 	{
 	}
 
@@ -32,6 +33,7 @@ protected:
 private:
 	offs_t m_base_addr;
 	required_device<ef9365_device> m_ef9365;
+	required_device<palette_device> m_palette;
 
 	u32 read32(address_space &space, offs_t offset, u32 mem_mask);
 	void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
