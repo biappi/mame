@@ -5527,3 +5527,15 @@ if MACHINES["AESTHEDES_BITPAD"] then
 		MAME_DIR .. "src/devices/machine/aesthedes_keyboard.h",
 	}
 end
+---------------------------------------------------
+--
+--@src/devices/machine/aesthedes_framebuffer.h,MACHINES["AESTHEDES_FRAMEBUFFER"] = true
+---------------------------------------------------
+
+if MACHINES["AESTHEDES_FRAMEBUFFER"] then
+	files {
+		MAME_DIR .. "src/devices/machine/aesthedes_framebuffer.cpp",
+		MAME_DIR .. "src/devices/machine/aesthedes_framebuffer.h",
+	}
+end
+

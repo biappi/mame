@@ -23,12 +23,25 @@ void aesthedes2_vme_68k_device::device_reset()
     m_cpu_irq6(CLEAR_LINE);
     m_clear_irq6_timer->adjust(attotime::never);
     m_fake_irq6_timer->adjust(attotime::zero, 0, attotime::from_hz(50));
+
+    m_framebuffer->clear(0x00ff00);
 }
 
 void aesthedes2_vme_68k_device::device_add_mconfig(machine_config &config)
 {
 	M68000(config, m_cpu, 8_MHz_XTAL);
     m_cpu->set_addrmap(AS_PROGRAM, &aesthedes2_vme_68k_device::main_map);
+
+    AESTHEDES_FRAMEBUFFER(config, m_framebuffer);
+    m_framebuffer->set_resolution(512, 512);
+
+#if ENABLE_68K_SCREEN
+    SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+    m_screen->set_refresh_hz(50);
+    m_screen->set_size(512, 512);
+    m_screen->set_visarea(0, 511, 0, 511);
+    m_screen->set_screen_update(m_framebuffer, FUNC(aesthedes_framebuffer_device::screen_update));
+#endif
 
     PIA6821(config, m_pia_a);
     m_pia_a->ca2_handler().set([this](int state){
@@ -70,6 +83,8 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
     map(0xff0004, 0xff0007).rw(m_pia_b, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff0008, 0xff000b).rw(m_pia_c, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
     map(0xff000c, 0xff000f).rw(m_pia_d, FUNC(pia6821_device::read_alt), FUNC(pia6821_device::write_alt));
+
+    map(0xffc000, 0xffcfff).m(m_framebuffer, FUNC(aesthedes_framebuffer_device::map)).umask16(0x00ff);
 
     map(0xffffb000, 0xffffb6ff).rw(FUNC(aesthedes2_vme_68k_device::mistery_r), FUNC(aesthedes2_vme_68k_device::mistery_w));
 }

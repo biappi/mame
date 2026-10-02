@@ -4,7 +4,11 @@
 #include "bus/vme/vme_cards.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/6821pia.h"
+#include "machine/aesthedes_framebuffer.h"
 #include "emupal.h"
+#include "screen.h"
+
+#define ENABLE_68K_SCREEN 0
 
 DECLARE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device);
 
@@ -20,6 +24,10 @@ public:
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
         , m_pia_d(*this, "pia_d")
+        , m_framebuffer(*this, "framebuffer")
+#if ENABLE_68K_SCREEN
+        , m_screen(*this, "screen")
+#endif
         , m_connector_a_porta(*this)
         , m_connector_a_portb(*this)
         , m_connector_a_x1(*this)
@@ -60,6 +68,10 @@ private:
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
     required_device<pia6821_device> m_pia_d;
+    required_device<aesthedes_framebuffer_device> m_framebuffer;
+#if ENABLE_68K_SCREEN
+    required_device<screen_device> m_screen;
+#endif
 
     devcb_write8 m_connector_a_porta;
     devcb_write8 m_connector_a_portb;
@@ -85,4 +97,6 @@ private:
 
     u16 mistery_r(offs_t offset, u16 mem_mask);
     void mistery_w(offs_t offset, u16 data, u16 mem_mask);
+
+    u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 };
