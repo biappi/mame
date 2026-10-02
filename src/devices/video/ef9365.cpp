@@ -204,7 +204,8 @@ ef9365_device::ef9365_device(const machine_config &mconfig, const char *tag, dev
 	m_charset(*this, "ef9365"),
 	m_palette(*this, finder_base::DUMMY_TAG),
 	m_irq_handler(*this),
-	m_write_msl(*this)
+	m_write_msl(*this),
+	m_pixel_write_cb(*this)
 {
 	set_display_mode(DISPLAY_MODE_256x256);
 	set_nb_bitplanes(1);
@@ -524,6 +525,14 @@ void ef9365_device::plot(int x_pos, int y_pos)
 		{
 			y_pos = (m_bitplane_yres - 1) - y_pos;
 			set_msl_pins(x_pos, y_pos);
+
+			if (!m_pixel_write_cb.isunset())
+			{
+				const u8 operation = (m_registers[EF936X_REG_CTRL1] & 0x02) ? 0x00 : 0x01;
+				m_pixel_write_cb((y_pos * m_bitplane_xres) + x_pos, operation);
+				return;
+			}
+
 			uint8_t mask = 0x80 >> (x_pos & 7);
 
 			if (m_registers[EF936X_REG_CTRL1] & 0x02)
@@ -875,6 +884,22 @@ void ef9365_device::dump_bitplanes_word()
 
 void ef9365_device::screen_scanning(bool force_clear)
 {
+	if (!m_pixel_write_cb.isunset())
+	{
+		const u8 operation = ((m_registers[EF936X_REG_CTRL1] & 0x02) && !force_clear) ? 0x00 : 0x01;
+
+		for (int y = 0; y < m_bitplane_yres; y++)
+		{
+			for (int x = 0; x < m_bitplane_xres; x++)
+			{
+				set_msl_pins(x, y);
+				m_pixel_write_cb((y * m_bitplane_xres) + x, operation);
+			}
+		}
+
+		return;
+	}
+
 	if ((m_registers[EF936X_REG_CTRL1] & 0x02) && !force_clear)
 	{
 		for (int y = 0; y < m_bitplane_yres; y++)

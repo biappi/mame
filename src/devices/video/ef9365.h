@@ -46,6 +46,8 @@ public:
 	void set_display_mode(int display_mode);
 	auto irq_handler() { return m_irq_handler.bind(); } // IRQ pin
 	auto write_msl() { return m_write_msl.bind(); } // memory select during pixel write
+	// External pixel writer: zero is pen, bit 0 denotes eraser.
+	auto pixel_write_callback() { return m_pixel_write_cb.bind(); }
 
 	// device interface
 	uint8_t data_r(offs_t offset);
@@ -125,6 +127,7 @@ private:
 	required_device<palette_device> m_palette;
 	devcb_write_line m_irq_handler;
 	devcb_write8 m_write_msl;
+	devcb_write8 m_pixel_write_cb;
 };
 
 // device type definition
