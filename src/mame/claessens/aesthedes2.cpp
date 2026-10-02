@@ -61,6 +61,7 @@ public:
         RS232_PORT(config, m_rs232_504, default_rs232_devices, "terminal");
 
         AES2_BITPAD(config, m_bitpad);
+        m_bitpad->set_screen(":crate5:08:aesthedes2_gpu:screen");
         AES2_KEYBOARD(config, m_keyboard);
 
 #if ENABLE_CRATE_3
