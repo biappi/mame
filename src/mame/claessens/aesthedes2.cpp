@@ -16,6 +16,10 @@
 
 #include "aesthedes2.lh"
 
+#define VERBOSE (0)
+#include "logmacro.h"
+
+
 // Selectively enable parts of the system. Good to troubleshoot/investigate/debug.
 // Crate 3 and 5 will require each an hard disk. You may need to adjust the command line
 // (-harddisk / -harddisk1 / -harddisk2) to make it work.
@@ -144,9 +148,11 @@ public:
             // Connect to crate 6. Note: flat cable is reversed!
             card.connector_c().portb_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_porta_w));
             card.connector_c().x1_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x2_w));
+            card.connector_c().x1_cb().append([this](int state) { if (!state) LOG("%s 516 CB2 -> 616 CA1\n", machine().describe_context());});
             card.connector_c().x2_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x1_w));
             card.connector_c().x19_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x20_w));
             card.connector_c().x20_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x19_w));
+            card.connector_c().x20_cb().append([this](int state) { if (!state) LOG("%s 516 CA2 -> 616 CB1\n", machine().describe_context());});
 #endif
         });
         VME_SLOT(config, "crate5:17").option_set("aesthedes2_io", VME_AESTHEDES2_IO).machine_config([this](device_t *dev) {
@@ -188,16 +194,18 @@ public:
         // the actual bus is not VME (has DIN41612 2x32 connectors instead of 3x32), likely G-64 by Gespac.
         // There is no G-64 in MAME at the time of writing, and VME should be good enough for emulation.
         VME(config, "crate6");
-        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([](device_t *dev) {
+        VME_SLOT(config, "crate6:16").option_set("aesthedes2_68k", VME_AESTHEDES2_68K).machine_config([this](device_t *dev) {
             auto &card = downcast<aesthedes2_vme_68k_device &>(*dev);
             card.set_rom(":c100_0038_616");
 #if ENABLE_CRATE_5
             // Connect to crate 5. Note: flat cable is reversed!
             card.connector_a_portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
             card.connector_a_x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
+            card.connector_a_x1_cb().append([this](int state) { if (!state) LOG("%s 616 CB2 -> 516 CA1\n", machine().describe_context());});
             card.connector_a_x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x1_w));
             card.connector_a_x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x20_w));
             card.connector_a_x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x19_w));
+            card.connector_a_x20_cb().append([this](int state) { if (!state) LOG("%s 616 CA2 -> 516 CB1\n", machine().describe_context());});
 #endif
         });
         VME_SLOT(config, "crate6:17").option_set("aesthedes2_multilevel", VME_AESTHEDES2_MULTILEVEL_GPU);
