@@ -84,12 +84,19 @@ public:
             auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
             card.set_base_address(0x04fc9000);
 #if ENABLE_CRATE_5
-            // Connect to crate 5. Note: flat cable is reversed!
+            // Connect A connector to crate 5's B connector. Note: flat cable is reversed!
             card.connector_a().portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_pa_w));
             card.connector_a().x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x2_w));
             card.connector_a().x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x1_w));
             card.connector_a().x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x20_w));
             card.connector_a().x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x19_w));
+
+            // Connect B connector to crate 5's A connector. Note: flat cable is reversed!
+            card.connector_b().portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pa_w));
+            card.connector_b().x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
+            card.connector_b().x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x1_w));
+            card.connector_b().x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x20_w));
+            card.connector_b().x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x19_w));
 #endif
         });
 
@@ -118,12 +125,19 @@ public:
             auto &card = downcast<aesthedes2_vme_io_device &>(*dev);
             card.set_base_address(0x04fc9000);
 #if ENABLE_CRATE_3
-            // Connect to crate 3. Note: flat cable is reversed!
+            // Connect B connector to crate 3's A connector. Note: flat cable is reversed!
             card.connector_b().portb_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_pa_w));
             card.connector_b().x1_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x2_w));
             card.connector_b().x2_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x1_w));
             card.connector_b().x19_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x20_w));
             card.connector_b().x20_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_a_x19_w));
+
+            // Connect A connector to crate 3's B connector. Note: flat cable is reversed!
+            card.connector_a().portb_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_pa_w));
+            card.connector_a().x1_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x2_w));
+            card.connector_a().x2_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x1_w));
+            card.connector_a().x19_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x20_w));
+            card.connector_a().x20_cb().set(":crate3:20:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_b_x19_w));
 #endif
 #if ENABLE_CRATE_6
             // Connect to crate 6. Note: flat cable is reversed!
