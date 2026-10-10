@@ -146,13 +146,33 @@ public:
 #endif
 #if ENABLE_CRATE_6
             // Connect to crate 6. Note: flat cable is reversed!
+            card.connector_c().porta_cb().append([this](u8 data) {
+                m_516_to_616_data.port_a = data;
+                m_516_to_616_data.port_a_valid = true;
+            });
             card.connector_c().portb_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_porta_w));
+            card.connector_c().portb_cb().append([this](u8 data) {
+                m_516_to_616_data.port_b = data;
+                m_516_to_616_data.port_b_valid = true;
+            });
             card.connector_c().x1_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x2_w));
-            card.connector_c().x1_cb().append([this](int state) { if (!state) LOG("%s 516 CB2 -> 616 CA1\n", machine().describe_context());});
+            card.connector_c().x1_cb().append([this](int state) {
+                if (!state) {
+                    LOG("%s 516 CB2 -> 616 CA1\n", machine().describe_context());
+                    if (m_516_to_616_data.port_b_valid)
+                        LOG("io 516 PB  --[0x%02X]---------> PA 616 %s\n", m_516_to_616_data.port_b, machine().describe_context());
+                }
+            });
             card.connector_c().x2_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x1_w));
             card.connector_c().x19_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x20_w));
             card.connector_c().x20_cb().set(":crate6:16:aesthedes2_68k", FUNC(aesthedes2_vme_68k_device::connector_a_x19_w));
-            card.connector_c().x20_cb().append([this](int state) { if (!state) LOG("%s 516 CA2 -> 616 CB1\n", machine().describe_context());});
+            card.connector_c().x20_cb().append([this](int state) {
+                if (!state) {
+                    LOG("%s 516 CA2 -> 616 CB1\n", machine().describe_context());
+                    if (m_516_to_616_data.port_a_valid)
+                        LOG("io 516 PA  --[0x%02X]---------> PB 616 %s\n", m_516_to_616_data.port_a, machine().describe_context());
+                }
+            });
 #endif
         });
         VME_SLOT(config, "crate5:17").option_set("aesthedes2_io", VME_AESTHEDES2_IO).machine_config([this](device_t *dev) {
@@ -199,13 +219,33 @@ public:
             card.set_rom(":c100_0038_616");
 #if ENABLE_CRATE_5
             // Connect to crate 5. Note: flat cable is reversed!
+            card.connector_a_porta_cb().append([this](u8 data) {
+                m_616_to_516_data.port_a = data;
+                m_616_to_516_data.port_a_valid = true;
+            });
             card.connector_a_portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));
+            card.connector_a_portb_cb().append([this](u8 data) {
+                m_616_to_516_data.port_b = data;
+                m_616_to_516_data.port_b_valid = true;
+            });
             card.connector_a_x1_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x2_w));
-            card.connector_a_x1_cb().append([this](int state) { if (!state) LOG("%s 616 CB2 -> 516 CA1\n", machine().describe_context());});
+            card.connector_a_x1_cb().append([this](int state) {
+                if (!state) {
+                    LOG("%s 616 CB2 -> 516 CA1\n", machine().describe_context());
+                    if (m_616_to_516_data.port_b_valid)
+                        LOG("io 516 PA <---------[0x%02X]--  PB 616 %s\n", m_616_to_516_data.port_b, machine().describe_context());
+                }
+            });
             card.connector_a_x2_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x1_w));
             card.connector_a_x19_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x20_w));
             card.connector_a_x20_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_x19_w));
-            card.connector_a_x20_cb().append([this](int state) { if (!state) LOG("%s 616 CA2 -> 516 CB1\n", machine().describe_context());});
+            card.connector_a_x20_cb().append([this](int state) {
+                if (!state) {
+                    LOG("%s 616 CA2 -> 516 CB1\n", machine().describe_context());
+                    if (m_616_to_516_data.port_a_valid)
+                        LOG("io 516 PB <---------[0x%02X]--  PA 616 %s\n", m_616_to_516_data.port_a, machine().describe_context());
+                }
+            });
 #endif
         });
         VME_SLOT(config, "crate6:17").option_set("aesthedes2_multilevel", VME_AESTHEDES2_MULTILEVEL_GPU);
@@ -220,6 +260,14 @@ private:
 
     required_device<aesthedes_bitpad_device> m_bitpad;
     required_device<aesthedes_keyboard_device> m_keyboard;
+    struct port_data {
+        u8 port_a = 0;
+        u8 port_b = 0;
+        bool port_a_valid = false;
+        bool port_b_valid = false;
+    };
+    port_data m_516_to_616_data;
+    port_data m_616_to_516_data;
 };
 
 static INPUT_PORTS_START(aesthedes2)
