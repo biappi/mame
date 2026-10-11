@@ -19,29 +19,32 @@ void aesthedes2_multilevel_gpu_device::device_add_mconfig(machine_config &config
 
 void aesthedes2_multilevel_gpu_device::device_start()
 {
-    vme_space(vme::AM_09).install_readwrite_handler(
-		0xff0000, 0xffffff,
-		read32_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::read32)),
-		write32_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::write32)));
+	vme_space(vme::AM_29).install_readwrite_handler(
+		0x0000, 0xffff,
+		read16_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::read16)),
+		write16_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::write16)));
 
-	vme_space(vme::AM_0d).install_readwrite_handler(
-		0xff0000, 0xffffff,
-		read32_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::read32)),
-		write32_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::write32)));
+	vme_space(vme::AM_2d).install_readwrite_handler(
+		0x0000, 0xffff,
+		read16_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::read16)),
+		write16_delegate(*this, FUNC(aesthedes2_multilevel_gpu_device::write16)));
 }
 
-u32 aesthedes2_multilevel_gpu_device::read32(address_space &space, offs_t offset, u32 mem_mask)
+u16 aesthedes2_multilevel_gpu_device::read16(address_space &space, offs_t offset, u16 mem_mask)
 {
-	if (!(ACCESSING_BITS_16_23) && !(ACCESSING_BITS_0_7)) {
-		LOGFAIL("unknown read @%08x mask=%08x\n", 0xfff000 + (offset << 2), mem_mask);
+    if (offset >= 0x8000) {
+        LOGFAIL("unexpected read offset %08x\n", offset);
         return 0;
     }
 
-	int card_offset = (offset << 1);
-    int shift;
-    if (ACCESSING_BITS_16_23) {
-        shift = 16;
+    int card_offset = (offset << 1);
+
+	if (!(ACCESSING_BITS_0_7)) {
+		LOGFAIL("unknown read @%04x mask=%04x\n", card_offset, mem_mask);
+        return 0;
     }
+
+    int shift;
     if (ACCESSING_BITS_0_7) {
 		card_offset += 1;
         shift = 0;
@@ -52,18 +55,21 @@ u32 aesthedes2_multilevel_gpu_device::read32(address_space &space, offs_t offset
 	return data << shift;
 }
 
-void aesthedes2_multilevel_gpu_device::write32(address_space &space, offs_t offset, u32 data, u32 mem_mask)
+void aesthedes2_multilevel_gpu_device::write16(address_space &space, offs_t offset, u16 data, u16 mem_mask)
 {
-    if (!(ACCESSING_BITS_16_23) && !(ACCESSING_BITS_0_7)) {
-        LOGFAIL("unknown write @%08x mask=%08x data=%08x\n", 0xfff000 + (offset << 2), mem_mask, data);
+    if (offset >= 0x8000) {
+        LOGFAIL("unexpected write offset %08x\n", offset);
         return;
     }
 
     int card_offset = (offset << 1);
-    int shift;
-    if (ACCESSING_BITS_16_23) {
-        shift = 16;
+    
+    if (!(ACCESSING_BITS_0_7)) {
+        LOGFAIL("unknown write @%04x mask=%04x data=%04x\n", card_offset, mem_mask, data);
+        return;
     }
+
+    int shift;
     if (ACCESSING_BITS_0_7) {
         card_offset += 1;
         shift = 0;

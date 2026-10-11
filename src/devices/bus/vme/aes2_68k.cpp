@@ -78,15 +78,15 @@ void aesthedes2_vme_68k_device::main_map(address_map &map)
 
 u16 aesthedes2_vme_68k_device::g64_ext_r(offs_t offset, u16 mem_mask)
 {
-    u16 read = device_vme_card_interface::vme_read16<vme::AM_0d, 0xff0000>(offset, mem_mask);
-    LOGMASKED(LOG_G64, "G64: read %08x mask %08x -> %08x\n", offset, mem_mask, read);
+    u16 read = device_vme_card_interface::vme_read16<vme::AM_29>(offset, mem_mask);
+    LOGMASKED(LOG_G64, "G64: read %04x mask %04x -> %04x\n", offset, mem_mask, read);
     return read;
 }
 
 void aesthedes2_vme_68k_device::g64_ext_w(offs_t offset, u16 data, u16 mem_mask)
 {
-    LOGMASKED(LOG_G64, "G64: write %08x mask %08x -> %08x\n", offset, mem_mask, data);
-    device_vme_card_interface::vme_write32<vme::AM_0d, 0xff0000>(offset, data, mem_mask);
+    LOGMASKED(LOG_G64, "G64: write %04x mask %04x -> %04x\n", offset, mem_mask, data);
+    device_vme_card_interface::vme_write16<vme::AM_29>(offset, data, mem_mask);
 }
 
 

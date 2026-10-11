@@ -19,6 +19,6 @@ protected:
 	virtual void device_start() override ATTR_COLD;
 
 private:
-	u32 read32(address_space &space, offs_t offset, u32 mem_mask);
-	void write32(address_space &space, offs_t offset, u32 data, u32 mem_mask);
+	u16 read16(address_space &space, offs_t offset, u16 mem_mask);
+	void write16(address_space &space, offs_t offset, u16 data, u16 mem_mask);
 };
