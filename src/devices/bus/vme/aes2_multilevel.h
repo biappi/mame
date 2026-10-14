@@ -19,6 +19,13 @@ protected:
 	virtual void device_start() override ATTR_COLD;
 
 private:
+	u8 m_current_level;
+	u8 m_data_register;
+	rgb_t m_level_colors[64];
+
 	u16 read16(address_space &space, offs_t offset, u16 mem_mask);
 	void write16(address_space &space, offs_t offset, u16 data, u16 mem_mask);
+
+	u8 reg8_read(offs_t offset);
+	void reg8_write(offs_t offset, u8 data);
 };
