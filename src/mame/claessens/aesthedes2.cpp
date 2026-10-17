@@ -16,7 +16,7 @@
 
 #include "aesthedes2.lh"
 
-#define VERBOSE (0)
+#define VERBOSE (1)
 #include "logmacro.h"
 
 
