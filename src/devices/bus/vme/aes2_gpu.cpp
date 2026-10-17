@@ -1,15 +1,17 @@
 #include "aes2_gpu.h"
 #include "screen.h"
 
-#define LOG_FAIL    (1U << 1)
-#define LOG_REGS    (1U << 2)
+#define LOG_FAIL        (1U << 1)
+#define LOG_EF_REGS     (1U << 2)
+#define LOG_NON_EF_REGS (1U << 3)
 
 #define VERBOSE (LOG_FAIL)
 
 #include "logmacro.h"
 
 #define LOGFAIL(...)    LOGMASKED(LOG_FAIL,  __VA_ARGS__)
-#define LOGREGS(...)    LOGMASKED(LOG_REGS, __VA_ARGS__)
+#define LOGEFR(...)     LOGMASKED(LOG_EF_REGS, __VA_ARGS__)
+#define LOGNEFR(...)    LOGMASKED(LOG_NON_EF_REGS, __VA_ARGS__)
 
 DEFINE_DEVICE_TYPE(VME_AESTHEDES2_GPU, aesthedes2_vme_gpu_device, "aesthedes2_gpu", "Aesthedes2 VME GPU");
 
@@ -71,8 +73,15 @@ u32 aesthedes2_vme_gpu_device::read32(address_space &space, offs_t offset, u32 m
 	} else {
 		data = 0xff;
 	}
-	
-    LOGREGS("%s reg READ  @%02x data=%02x\n", machine().describe_context(), card_offset, data);
+
+	if (is_ef9365) {
+		if (card_offset != 0) {
+			LOGEFR("%s reg READ  @%02x data=%02x\n", machine().describe_context(), card_offset, data);
+		}
+	} else {
+		LOGNEFR("%s reg READ  @%02x data=%02x\n", machine().describe_context(), card_offset, data);
+	}
+
 	return data << shift;
 }
 
@@ -94,10 +103,15 @@ void aesthedes2_vme_gpu_device::write32(address_space &space, offs_t offset, u32
     }
 
     uint8_t reg_data = data >> shift;
-
-	LOGREGS("%s reg WRITE @%02x data=%02x\n", machine().describe_context(), card_offset, reg_data);
 	
 	bool is_ef9365 = (card_offset < 0xC);
+	
+	if (is_ef9365) {
+		LOGEFR("%s reg WRITE @%02x data=%02x\n", machine().describe_context(), card_offset, reg_data);
+	} else {
+		LOGNEFR("%s reg WRITE @%02x data=%02x\n", machine().describe_context(), card_offset, reg_data);
+	}
+	
 	if (is_ef9365) {
 		m_ef9365->data_w(card_offset, reg_data);
 	}
