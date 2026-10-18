@@ -105,34 +105,21 @@ void aesthedes2_vme_gpu_device::pixel_w(offs_t offset, u8 operation)
 {
 	const u8 mask = 0x80 >> (offset & 7);
 	const unsigned byte_offset = offset >> 3;
-	const unsigned planes = m_drawing_target == 0 ? DISPLAY_BITPLANES : 1;
+	const unsigned layer = m_drawing_target == 0
+		? m_ink
+		: DISPLAY_LAYERS + m_drawing_target - 1;
+	u8 &pixel = m_vram[layer_vram_offset(layer) + byte_offset];
 
-	const int ink = m_drawing_target == 0 ? m_ink : 1;
-
-	for (unsigned plane = 0; plane < planes; plane++)
-	{
-		u8 &pixel = m_vram[target_vram_offset(m_drawing_target, plane) + byte_offset];
-
-		if (!BIT(operation, 0) && BIT(ink, plane))
-			pixel |= mask;
-		else
-			pixel &= ~mask;
-	}
+	if (!BIT(operation, 0))
+		pixel |= mask;
+	else
+		pixel &= ~mask;
 }
 
-u8 aesthedes2_vme_gpu_device::target_pixel(u8 target, int pixel_offset) const
+bool aesthedes2_vme_gpu_device::layer_pixel(unsigned layer, int pixel_offset) const
 {
-	u8 color = 0;
-	const unsigned planes = target == 0 ? DISPLAY_BITPLANES : 1;
-
-	for (unsigned plane = 0; plane < planes; plane++)
-	{
-		const unsigned offset = target_vram_offset(target, plane) + (pixel_offset >> 3);
-		if (BIT(m_vram[offset], ~pixel_offset & 7))
-			color |= 1U << plane;
-	}
-
-	return color;
+	const unsigned offset = layer_vram_offset(layer) + (pixel_offset >> 3);
+	return BIT(m_vram[offset], ~pixel_offset & 7);
 }
 
 u32 aesthedes2_vme_gpu_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
@@ -142,13 +129,19 @@ u32 aesthedes2_vme_gpu_device::screen_update(screen_device &screen, bitmap_rgb32
 		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			const int pixel_offset = (y * 512) + x;
-			u8 color = target_pixel(0, pixel_offset);
-			rgb_t col = m_palette->pen(color);
+			rgb_t col = m_palette->pen(0);
 
-			for (u8 target = 1; target < DRAW_TARGETS; target++)
+			// Layers are composited in palette order, so a set pixel in a
+			// higher-numbered colour layer covers the layers beneath it.
+			for (unsigned layer = 0; layer < DISPLAY_LAYERS; layer++)
 			{
-				const u8 overlay_color = target_pixel(target, pixel_offset);
-				if (overlay_color != 0)
+				if (layer_pixel(layer, pixel_offset))
+					col = m_palette->pen(layer);
+			}
+
+			for (unsigned layer = DISPLAY_LAYERS; layer < FRAMEBUFFER_LAYERS; layer++)
+			{
+				if (layer_pixel(layer, pixel_offset))
 					col = rgb_t(0xff, 0x00, 0xff);
 			}
 

@@ -28,13 +28,16 @@ public:
 		m_base_addr = addr;
 	}
 
-	static constexpr unsigned DRAW_TARGETS = 8;
-	static constexpr unsigned DISPLAY_BITPLANES = 6;
-	static constexpr unsigned VRAM_SIZE = (DISPLAY_BITPLANES + DRAW_TARGETS - 1) * ef9365_device::BITPLANE_MAX_SIZE;
+	// The display surface is organised as one bitplane for each of the 64
+	// palette entries, followed by the seven board-local work/overlay layers.
+	static constexpr unsigned DISPLAY_LAYERS = 64;
+	static constexpr unsigned OVERLAY_LAYERS = 7;
+	static constexpr unsigned FRAMEBUFFER_LAYERS = DISPLAY_LAYERS + OVERLAY_LAYERS;
+	static constexpr unsigned VRAM_SIZE = FRAMEBUFFER_LAYERS * ef9365_device::BITPLANE_MAX_SIZE;
 
-	static constexpr unsigned target_vram_offset(unsigned target, unsigned plane = 0)
+	static constexpr unsigned layer_vram_offset(unsigned layer)
 	{
-		return (target == 0 ? plane : DISPLAY_BITPLANES + target - 1) * ef9365_device::BITPLANE_MAX_SIZE;
+		return layer * ef9365_device::BITPLANE_MAX_SIZE;
 	}
 
 protected:
@@ -45,7 +48,7 @@ protected:
 private:
 	void update_vram_mode();
 	void pixel_w(offs_t offset, u8 operation);
-	u8 target_pixel(u8 target, int pixel_offset) const;
+	bool layer_pixel(unsigned layer, int pixel_offset) const;
 	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
 	offs_t m_base_addr;
