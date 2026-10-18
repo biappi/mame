@@ -21,6 +21,8 @@ public:
         , m_cpu(*this, "cpu")
         , m_palette(*this, finder_base::DUMMY_TAG)
         , m_vram(*this, finder_base::DUMMY_TAG)
+        , m_display_layer_mask(*this, finder_base::DUMMY_TAG)
+        , m_overlay_layer_mask(*this, finder_base::DUMMY_TAG)
         , m_pia_a(*this, "pia_a")
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
@@ -42,6 +44,8 @@ public:
     void set_rom(const char *rom_name);
     void set_palette_tag(char const *tag) { m_palette.set_tag(*this, tag); }
     void set_vram_tag(char const *tag) { m_vram.set_tag(*this, tag); }
+    void set_display_layer_mask_tag(char const *tag) { m_display_layer_mask.set_tag(*this, tag); }
+    void set_overlay_layer_mask_tag(char const *tag) { m_overlay_layer_mask.set_tag(*this, tag); }
 
     auto connector_a_porta_cb() { return m_connector_a_porta.bind(); };
     auto connector_a_portb_cb() { return m_connector_a_portb.bind(); };
@@ -64,9 +68,11 @@ protected:
     virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
 
 private:
-	required_device<m68000_device> m_cpu;
+    required_device<m68000_device> m_cpu;
     required_device<palette_device> m_palette;
     required_shared_ptr<u8> m_vram;
+    required_shared_ptr<u64> m_display_layer_mask;
+    required_shared_ptr<u8> m_overlay_layer_mask;
     required_device<pia6821_device> m_pia_a;
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
@@ -101,6 +107,5 @@ private:
     u16 mistery_r(offs_t offset, u16 mem_mask);
     void mistery_w(offs_t offset, u16 data, u16 mem_mask);
 
-    u8 target_pixel(u8 target, int pixel_offset) const;
     u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 };

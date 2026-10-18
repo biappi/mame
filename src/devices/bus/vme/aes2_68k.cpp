@@ -236,43 +236,25 @@ void aesthedes2_vme_68k_device::mistery_w(offs_t offset, u16 data, u16 mem_mask)
 
 }
 
-u8 aesthedes2_vme_68k_device::target_pixel(u8 target, int pixel_offset) const
-{
-	u8 color = 0;
-	// const unsigned planes = target == 0 ? aesthedes2_vme_gpu_device::DISPLAY_BITPLANES : 1;
-
-	// for (unsigned plane = 0; plane < planes; plane++)
-	// {
-	// 	const unsigned offset = aesthedes2_vme_gpu_device::target_vram_offset(target, plane) + (pixel_offset >> 3);
-	// 	if (BIT(m_vram[offset], ~pixel_offset & 7))
-	// 		color |= 1U << plane;
-	// }
-
-	return color;
-}
-
-
 u32 aesthedes2_vme_68k_device::screen_update(screen_device &, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
-    bitmap.fill(rgb_t::white(), cliprect);
-	// for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
-	// {
-	// 	for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
-	// 	{
-	// 		const int pixel_offset = (y * 512) + x;
-	// 		u8 color = target_pixel(0, pixel_offset);
-	// 		rgb_t col = m_palette->pen(color);
+	for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
+	{
+		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
+		{
+			const int pixel_offset = (y * aesthedes2_vme_gpu_device::FRAMEBUFFER_WIDTH) + x;
+			const u64 display_layers = m_display_layer_mask[pixel_offset];
+			const unsigned color = display_layers
+				? 63U - unsigned(__builtin_clzll(display_layers))
+				: 0;
+			rgb_t col = m_palette->pen(color);
 
-	// 		for (u8 target = 1; target < aesthedes2_vme_gpu_device::DRAW_TARGETS; target++)
-	// 		{
-	// 			const u8 overlay_color = target_pixel(target, pixel_offset);
-	// 			if (overlay_color != 0)
-	// 				col = rgb_t(0xff, 0x00, 0xff);
-	// 		}
+			if (m_overlay_layer_mask[pixel_offset] != 0)
+				col = rgb_t(0xff, 0x00, 0xff);
 
-	// 		bitmap.pix(y, x) = col;
-	// 	}
-	// }
+			bitmap.pix(y, x) = col;
+		}
+	}
 
 	return 0;
 }

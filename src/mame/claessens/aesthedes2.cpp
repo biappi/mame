@@ -178,6 +178,8 @@ public:
             card.set_rom(":c100_0038_616");
             card.set_palette_tag(":crate5:08:aesthedes2_gpu:palette");
             card.set_vram_tag(":crate5:08:aesthedes2_gpu:vram");
+            card.set_display_layer_mask_tag(":crate5:08:aesthedes2_gpu:display_layer_mask");
+            card.set_overlay_layer_mask_tag(":crate5:08:aesthedes2_gpu:overlay_layer_mask");
 #if ENABLE_CRATE_5
             // Connect to crate 5. Note: flat cable is reversed!
             card.connector_a_portb_cb().set(":crate5:16:aesthedes2_io", FUNC(aesthedes2_vme_io_device::connector_c_pa_w));

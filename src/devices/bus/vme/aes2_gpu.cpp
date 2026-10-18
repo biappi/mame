@@ -97,8 +97,37 @@ void aesthedes2_vme_gpu_device::device_reset()
 	m_init_latch = 0;
 
 	std::fill(m_vram.begin(), m_vram.end(), 0x00);
+	std::fill(m_display_layer_mask.begin(), m_display_layer_mask.end(), 0);
+	std::fill(m_overlay_layer_mask.begin(), m_overlay_layer_mask.end(), 0);
 
 	update_vram_mode();
+}
+
+void aesthedes2_vme_gpu_device::device_post_load()
+{
+	rebuild_layer_masks();
+}
+
+void aesthedes2_vme_gpu_device::rebuild_layer_masks()
+{
+	std::fill(m_display_layer_mask.begin(), m_display_layer_mask.end(), 0);
+	std::fill(m_overlay_layer_mask.begin(), m_overlay_layer_mask.end(), 0);
+
+	for (unsigned layer = 0; layer < FRAMEBUFFER_LAYERS; layer++)
+	{
+		const unsigned layer_offset = layer_vram_offset(layer);
+
+		for (unsigned pixel_offset = 0; pixel_offset < FRAMEBUFFER_PIXELS; pixel_offset++)
+		{
+			if (!BIT(m_vram[layer_offset + (pixel_offset >> 3)], ~pixel_offset & 7))
+				continue;
+
+			if (layer < DISPLAY_LAYERS)
+				m_display_layer_mask[pixel_offset] |= u64(1) << layer;
+			else
+				m_overlay_layer_mask[pixel_offset] |= u8(1) << (layer - DISPLAY_LAYERS);
+		}
+	}
 }
 
 void aesthedes2_vme_gpu_device::pixel_w(offs_t offset, u8 operation)
@@ -114,12 +143,23 @@ void aesthedes2_vme_gpu_device::pixel_w(offs_t offset, u8 operation)
 		pixel |= mask;
 	else
 		pixel &= ~mask;
-}
 
-bool aesthedes2_vme_gpu_device::layer_pixel(unsigned layer, int pixel_offset) const
-{
-	const unsigned offset = layer_vram_offset(layer) + (pixel_offset >> 3);
-	return BIT(m_vram[offset], ~pixel_offset & 7);
+	if (m_drawing_target == 0)
+	{
+		const u64 layer_mask = u64(1) << m_ink;
+		if (!BIT(operation, 0))
+			m_display_layer_mask[offset] |= layer_mask;
+		else
+			m_display_layer_mask[offset] &= ~layer_mask;
+	}
+	else
+	{
+		const u8 layer_mask = u8(1) << (m_drawing_target - 1);
+		if (!BIT(operation, 0))
+			m_overlay_layer_mask[offset] |= layer_mask;
+		else
+			m_overlay_layer_mask[offset] &= ~layer_mask;
+	}
 }
 
 u32 aesthedes2_vme_gpu_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
@@ -128,22 +168,15 @@ u32 aesthedes2_vme_gpu_device::screen_update(screen_device &screen, bitmap_rgb32
 	{
 		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
-			const int pixel_offset = (y * 512) + x;
-			rgb_t col = m_palette->pen(0);
+			const int pixel_offset = (y * FRAMEBUFFER_WIDTH) + x;
+			const u64 display_layers = m_display_layer_mask[pixel_offset];
+			const unsigned color = display_layers
+				? 63U - unsigned(__builtin_clzll(display_layers))
+				: 0;
+			rgb_t col = m_palette->pen(color);
 
-			// Layers are composited in palette order, so a set pixel in a
-			// higher-numbered colour layer covers the layers beneath it.
-			for (unsigned layer = 0; layer < DISPLAY_LAYERS; layer++)
-			{
-				if (layer_pixel(layer, pixel_offset))
-					col = m_palette->pen(layer);
-			}
-
-			for (unsigned layer = DISPLAY_LAYERS; layer < FRAMEBUFFER_LAYERS; layer++)
-			{
-				if (layer_pixel(layer, pixel_offset))
-					col = rgb_t(0xff, 0x00, 0xff);
-			}
+			if (m_overlay_layer_mask[pixel_offset] != 0)
+				col = rgb_t(0xff, 0x00, 0xff);
 
 			bitmap.pix(y, x) = col;
 		}
