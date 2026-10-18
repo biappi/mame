@@ -110,6 +110,12 @@ u16 aesthedes2_vme_68k_device::mistery_r(offs_t offset, u16 mem_mask)
     {
         switch (address + 1)
         {
+        // swallow write-register spurious reads
+        case 0xffffb001:
+        case 0xffffb101:
+        case 0xffffb301:
+            return 0x0000;
+
         case 0xffffb601:
             LOGREGS("%s: mistery read b6: status / ack register.\n", machine().describe_context());
             return 0x0000;
