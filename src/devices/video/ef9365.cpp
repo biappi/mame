@@ -65,11 +65,13 @@
 
 #include "screen.h"
 
-#define LOG_BUSY (1U << 1)
+#define LOG_BUSY        (1U << 1)
+#define LOG_DRAW_VECTOR (1U << 2)
 #define VERBOSE 0
 #include "logmacro.h"
 
 #define LOGBUSY(...) LOGMASKED(LOG_BUSY, __VA_ARGS__)
+#define LOGVECT(...) LOGMASKED(LOG_DRAW_VECTOR, __VA_ARGS__)
 
 namespace {
 
@@ -571,7 +573,7 @@ const static uint8_t vectortype_code[4][8] =
 
 int ef9365_device::draw_vector(uint16_t start_x, uint16_t start_y, int16_t delta_x, int16_t delta_y)
 {
-	LOG("EF9365 draw_vector : Start=(%3d,%3d) End=(%3d,%3d)\n", start_x, start_y, start_x + delta_x, start_y + delta_y);
+	LOGVECT("%s: EF9365 draw_vector : Start=(%3d,%3d) End=(%3d,%3d)\n", machine().describe_context(), start_x, start_y, start_x + delta_x, start_y + delta_y);
 
 	int compute_cycles = 0;
 
