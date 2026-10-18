@@ -43,6 +43,17 @@ inline constexpr std::array<std::uint16_t, 128> keycodes = [] {
     result[0x38] = 584; // 8
     result[0x39] = 616; // 9
 
+    result[0x51] = 514; // Q --> layer 0
+    result[0x57] = 513; // W --> layer 1
+    result[0x45] = 546; // E --> layer 2
+    result[0x52] = 545; // R --> layer 3
+    result[0x54] = 578; // T --> layer 4
+    result[0x59] = 577; // Y --> layer 5
+    result[0x55] = 610; // U --> layer 6
+    result[0x49] = 609; // I --> layer 7
+    result[0x4f] = 642; // O --> layer 8
+    result[0x50] = 641; // P --> layer 9
+
     result[0x61] = 1061; // a
     result[0x62] = 1222; // b
     result[0x63] = 1158; // c
