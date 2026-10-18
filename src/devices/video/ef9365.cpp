@@ -67,7 +67,7 @@
 
 #define LOG_BUSY        (1U << 1)
 #define LOG_DRAW_VECTOR (1U << 2)
-#define VERBOSE 0
+#define VERBOSE (LOG_DRAW_VECTOR)
 #include "logmacro.h"
 
 #define LOGBUSY(...) LOGMASKED(LOG_BUSY, __VA_ARGS__)
