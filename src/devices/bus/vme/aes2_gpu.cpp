@@ -164,19 +164,35 @@ void aesthedes2_vme_gpu_device::pixel_w(offs_t offset, u8 operation)
 
 u32 aesthedes2_vme_gpu_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
+	static rgb_t const overlay_colors[OVERLAY_LAYERS] =
+	{
+		rgb_t(0xff, 0x00, 0x00), // layer 0: red
+		rgb_t(0x00, 0xff, 0x00), // layer 1: green
+		rgb_t(0x00, 0x00, 0xff), // layer 2: blue
+		rgb_t(0xff, 0xff, 0x00), // layer 3: yellow
+		rgb_t(0xff, 0x00, 0xff), // layer 4: magenta
+		rgb_t(0x00, 0xff, 0xff), // layer 5: cyan
+		rgb_t(0xff, 0xff, 0xff), // layer 6: white
+	};
+
+	const unsigned display_layer = m_display_control & (DISPLAY_LAYERS - 1);
+	const u64 display_layer_mask = u64(1) << display_layer;
+
 	for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
 	{
 		for (int x = cliprect.min_x; x <= cliprect.max_x; x++)
 		{
 			const int pixel_offset = (y * FRAMEBUFFER_WIDTH) + x;
-			const u64 display_layers = m_display_layer_mask[pixel_offset];
-			const unsigned color = display_layers
-				? 63U - unsigned(__builtin_clzll(display_layers))
-				: 0;
-			rgb_t col = m_palette->pen(color);
+			rgb_t col = (m_display_layer_mask[pixel_offset] & display_layer_mask)
+				? rgb_t(0xff, 0x7f, 0x7f)
+				: rgb_t::black();
+			const u8 overlays = m_overlay_layer_mask[pixel_offset];
 
-			if (m_overlay_layer_mask[pixel_offset] != 0)
-				col = rgb_t(0xff, 0x00, 0xff);
+			for (unsigned layer = 0; layer < OVERLAY_LAYERS; layer++)
+			{
+				if (BIT(overlays, layer))
+					col = overlay_colors[layer];
+			}
 
 			bitmap.pix(y, x) = col;
 		}
