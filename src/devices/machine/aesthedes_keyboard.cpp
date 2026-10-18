@@ -16,8 +16,11 @@ inline constexpr std::array<std::uint16_t, 128> keycodes = [] {
     result[0x09] = 1354; // TAB
     result[0x0d] = 554;  // ENTER
     
+    result[0x1b] = 0x20b; // ESC
+    result[0x5c] =  199; // \ (backslash)
+
     result[0x21] =  275;
-    result[0x40] =  366;
+    result[0x40] = 2436;
     result[0x23] =  535;
     result[0x24] =  615;
     result[0x25] =  677;
@@ -26,10 +29,8 @@ inline constexpr std::array<std::uint16_t, 128> keycodes = [] {
     result[0x2a] =  713;
     result[0x28] =  716;
     result[0x29] =  748;
-    result[0x5f] = 1361;
-    result[0x2b] = 1366;
-
-
+    result[0x5f] = 0x449;
+    result[0x2b] = 0x469;
 
     result[0x30] = 585; // 0
     result[0x31] = 549; // 1
