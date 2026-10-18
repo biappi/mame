@@ -8,6 +8,8 @@
 		
 		<!-- Current-Level Monitor, right color screen -->
 		<screen index="2"> <bounds x="8" y="6" width="3" height="3" /> </screen>
+		<!-- Multi-Level Monitor, center screen -->
+		<screen index="7"> <bounds x="4" y="6" width="3" height="3" /> </screen>
 		<!-- Window Monitor, left color screen -->
 		<screen index="3"> <bounds x="0" y="6" width="3" height="3" /> </screen>
 		

@@ -8,7 +8,7 @@
 #include "emupal.h"
 #include "screen.h"
 
-#define ENABLE_68K_SCREEN 0
+#define ENABLE_68K_SCREEN 1
 
 DECLARE_DEVICE_TYPE(VME_AESTHEDES2_68K, aesthedes2_vme_68k_device);
 
@@ -20,6 +20,7 @@ public:
         , device_vme_card_interface(mconfig, *this)
         , m_cpu(*this, "cpu")
         , m_palette(*this, finder_base::DUMMY_TAG)
+        , m_vram(*this, finder_base::DUMMY_TAG)
         , m_pia_a(*this, "pia_a")
         , m_pia_b(*this, "pia_b")
         , m_pia_c(*this, "pia_c")
@@ -40,6 +41,7 @@ public:
 
     void set_rom(const char *rom_name);
     void set_palette_tag(char const *tag) { m_palette.set_tag(*this, tag); }
+    void set_vram_tag(char const *tag) { m_vram.set_tag(*this, tag); }
 
     auto connector_a_porta_cb() { return m_connector_a_porta.bind(); };
     auto connector_a_portb_cb() { return m_connector_a_portb.bind(); };
@@ -64,6 +66,7 @@ protected:
 private:
 	required_device<m68000_device> m_cpu;
     required_device<palette_device> m_palette;
+    required_shared_ptr<u8> m_vram;
     required_device<pia6821_device> m_pia_a;
     required_device<pia6821_device> m_pia_b;
     required_device<pia6821_device> m_pia_c;
@@ -98,5 +101,6 @@ private:
     u16 mistery_r(offs_t offset, u16 mem_mask);
     void mistery_w(offs_t offset, u16 data, u16 mem_mask);
 
+    u8 target_pixel(u8 target, int pixel_offset) const;
     u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 };

@@ -15,6 +15,8 @@ public:
 		, m_base_addr(0)
 		, m_ef9365(*this, "ef9365")
 		, m_palette(*this, "palette")
+		, m_vram(*this, "vram", VRAM_SIZE, ENDIANNESS_BIG)
+
 	{
 	}
 
@@ -26,12 +28,6 @@ public:
 		m_base_addr = addr;
 	}
 
-protected:
-    virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
-	virtual void device_start() override ATTR_COLD;
-	virtual void device_reset() override ATTR_COLD;
-
-private:
 	static constexpr unsigned DRAW_TARGETS = 8;
 	static constexpr unsigned DISPLAY_BITPLANES = 6;
 	static constexpr unsigned VRAM_SIZE = (DISPLAY_BITPLANES + DRAW_TARGETS - 1) * ef9365_device::BITPLANE_MAX_SIZE;
@@ -41,6 +37,12 @@ private:
 		return (target == 0 ? plane : DISPLAY_BITPLANES + target - 1) * ef9365_device::BITPLANE_MAX_SIZE;
 	}
 
+protected:
+    virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+	virtual void device_start() override ATTR_COLD;
+	virtual void device_reset() override ATTR_COLD;
+
+private:
 	void update_vram_mode();
 	void pixel_w(offs_t offset, u8 operation);
 	u8 target_pixel(u8 target, int pixel_offset) const;
@@ -49,7 +51,7 @@ private:
 	offs_t m_base_addr;
 	required_device<ef9365_device> m_ef9365;
 	required_device<palette_device> m_palette;
-	std::vector<u8> m_vram;
+	memory_share_creator<u8> m_vram;
 
 	// Board latches at offsets 0x0c-0x11.  These are not EF9365 registers on
 	// the Aesthedes card, even though 0x0c and 0x0d share their positions with

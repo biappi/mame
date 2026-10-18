@@ -38,9 +38,6 @@ void aesthedes2_vme_gpu_device::device_start()
 	if (m_base_addr == 0)
 		fatalerror("base address not set");
 
-	m_vram.resize(VRAM_SIZE);
-	save_item(NAME(m_vram));
-
 	vme_space(vme::AM_09).install_readwrite_handler(
 		m_base_addr, m_base_addr + 0xff,
 		read32_delegate(*this, FUNC(aesthedes2_vme_gpu_device::read32)),
